@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <!-- NextP Clay System — cores base -->
-    <color name="nextp_primary_blue">#006DFF</color>
-    <color name="nextp_light_blue">#72D7FF</color>
-    <color name="nextp_background">#F7FBFF</color>
-    <color name="nextp_white">#FFFFFF</color>
-    <color name="nextp_icon_blue">#2E86FF</color>
-</resources>

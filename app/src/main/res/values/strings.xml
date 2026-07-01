@@ -1,7 +1,0 @@
-<resources>
-    <string name="app_name">NextP</string>
-    <string name="tab_records">Registos</string>
-    <string name="tab_saved">Guardados</string>
-    <string name="tab_planning">Planeamento</string>
-    <string name="tab_summary">Resumo</string>
-</resources>

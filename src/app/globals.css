@@ -1,0 +1,43 @@
+@import url("https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,400;0,600;0,700;0,800;0,900&display=swap");
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  @apply bg-nextp-bg text-nextp-ink font-sans antialiased;
+  /* Safe areas do iPhone (notch / barra inferior) */
+  padding-top: env(safe-area-inset-top);
+}
+
+@layer components {
+  .clay-card {
+    @apply bg-nextp-card rounded-clay-lg shadow-clay p-5;
+  }
+  .clay-card-soft {
+    @apply bg-nextp-cardsoft rounded-clay-lg shadow-clay-sm p-5;
+  }
+  .clay-btn {
+    @apply bg-nextp-blue text-white font-extrabold rounded-clay-lg shadow-clay-btn
+           px-5 py-3 active:scale-95 transition-transform select-none;
+  }
+  .clay-btn-ghost {
+    @apply bg-white text-nextp-blue font-bold rounded-clay-lg shadow-clay-sm
+           px-4 py-3 active:scale-95 transition-transform;
+  }
+  .clay-input {
+    @apply w-full bg-nextp-cardsoft rounded-clay px-4 py-3 text-nextp-ink
+           outline-none focus:ring-2 focus:ring-nextp-blue/40 placeholder:text-nextp-muted;
+  }
+  .clay-chip {
+    @apply rounded-full px-3 py-2 text-sm font-bold shadow-clay-sm active:scale-95 transition-transform;
+  }
+}
