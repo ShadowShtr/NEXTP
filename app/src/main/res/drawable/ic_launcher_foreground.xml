@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  NextP — foreground do ícone adaptativo.
+  Recriação vetorial do "N" branco com seta de crescimento integrada.
+  Master oficial (3D claymorphism): assets/icons/nextp-icon-1024.png
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Corpo do N (traço grosso arredondado) -->
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="13"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M36,80 L36,42 L62,78 L78,37" />
+
+    <!-- Cabeça da seta apontando para cima/direita (crescimento) -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M83,28 L60,36 L74,51 Z" />
+</vector>
