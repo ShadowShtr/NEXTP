@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Tema base; a UI real é definida em Compose (ui/theme). -->
+    <style name="Theme.NextP" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:statusBarColor">@color/nextp_background</item>
+        <item name="android:windowLightStatusBar">true</item>
+    </style>
+</resources>
