@@ -1,0 +1,20 @@
+# Changelog
+
+Todas as mudanças relevantes do NextP. Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/).
+
+## [Unreleased]
+
+### Added
+- **Fase 1 — Base do projeto**
+  - Estrutura de pastas, `.gitignore`, README e documentação inicial (`docs/`).
+  - Projeto Android (Kotlin + Jetpack Compose + Material 3) com Gradle version catalog.
+  - Camada de dados com Room: entidades `Category`, `Expense`, `SavedItem`, `PlanningItem`, `RecurringPayment`, `RecurringPaymentOccurrence`, `MonthlySummary`, `UserSettings`.
+  - DAOs principais e `NextPDatabase` com persistência em disco.
+  - Seed de categorias padrão na primeira execução.
+- **Fase 2 — Design system e ícone**
+  - `NextP Clay System`: paleta, tipografia, shapes e componentes clay (`ClayCard`, `PaymentDot`).
+  - Tema Compose (claro/escuro).
+  - Ícone adaptativo do app (N + seta) e estrutura de assets.
+  - Navegação principal com 4 abas (Registos, Guardados, Planeamento, Resumo).
+
+[Unreleased]: https://github.com/USER/nextp/commits/main
