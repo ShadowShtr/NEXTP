@@ -1,76 +1,107 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { getSupabase } from "@/lib/supabase";
 import { ensureDefaultCategories } from "@/lib/seed";
+import type { Category, Expense } from "@/lib/types";
+import { nowHM, todayISO } from "@/lib/format";
+import { PAYMENT_METHODS } from "@/lib/types";
 import RecordsTab from "@/components/tabs/RecordsTab";
 import SavedTab from "@/components/tabs/SavedTab";
 import PlanningTab from "@/components/tabs/PlanningTab";
 import SummaryTab from "@/components/tabs/SummaryTab";
+import AddExpenseSheet from "@/components/AddExpenseSheet";
 
 type Tab = "records" | "saved" | "planning" | "summary";
-
-const TABS: { id: Tab; label: string; icon: string }[] = [
-  { id: "records", label: "Registos", icon: "🧾" },
-  { id: "saved", label: "Guardados", icon: "📦" },
-  { id: "planning", label: "Planeamento", icon: "📅" },
-  { id: "summary", label: "Resumo", icon: "📊" },
-];
 
 export default function AppShell({ session }: { session: Session }) {
   const userId = session.user.id;
   const [tab, setTab] = useState<Tab>("records");
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [addOpen, setAddOpen] = useState(false);
+  const [editing, setEditing] = useState<Expense | null>(null);
+  const [preset, setPreset] = useState<string | null>(null);
+  const [refresh, setRefresh] = useState(0);
 
-  useEffect(() => {
-    ensureDefaultCategories(userId).catch(() => {});
+  const loadCats = useCallback(async () => {
+    await ensureDefaultCategories(userId);
+    const { data } = await getSupabase().from("categories").select("*").eq("user_id", userId).order("name");
+    if (data) setCategories(data as Category[]);
   }, [userId]);
 
-  async function logout() {
-    await getSupabase().auth.signOut();
-  }
+  useEffect(() => { loadCats(); }, [loadCats]);
+
+  function openAdd() { setEditing(null); setPreset(null); setAddOpen(true); }
+  function openQuick(catId: string) { setEditing(null); setPreset(catId); setAddOpen(true); }
+  function openEdit(e: Expense) { setEditing(e); setPreset(null); setAddOpen(true); }
+  function close() { setAddOpen(false); setEditing(null); setPreset(null); }
+  function afterSave() { close(); setRefresh((r) => r + 1); }
+
+  async function logout() { await getSupabase().auth.signOut(); }
+
+  const key = `${tab}-${refresh}`;
 
   return (
     <div className="min-h-screen flex flex-col">
-      <header className="flex items-center justify-between px-5 pt-4 pb-2">
+      <header className="flex items-center justify-between px-5 pt-4 pb-1">
         <div className="flex items-center gap-2">
-          <div className="w-9 h-9 rounded-clay bg-nextp-icon grid place-items-center text-white font-black shadow-clay-sm">
-            N
-          </div>
-          <span className="font-black text-nextp-blue text-lg">NextP</span>
+          <div className="w-9 h-9 rounded-clay bg-nextp-icon grid place-items-center text-white font-black shadow-clay-sm">N</div>
+          <span className="font-black text-nextp-blue text-xl">NextP</span>
         </div>
-        <button onClick={logout} className="text-nextp-muted text-sm font-bold">
-          Sair
-        </button>
+        <div className="flex items-center gap-3">
+          <span className="w-9 h-9 rounded-full bg-white shadow-clay-sm grid place-items-center">🔔</span>
+          <button onClick={logout} className="text-nextp-muted text-sm font-bold">Sair</button>
+        </div>
       </header>
 
       <main className="flex-1 overflow-y-auto pb-28">
-        {tab === "records" && <RecordsTab userId={userId} />}
-        {tab === "saved" && <SavedTab userId={userId} />}
-        {tab === "planning" && <PlanningTab userId={userId} />}
-        {tab === "summary" && <SummaryTab userId={userId} />}
+        {tab === "records" && <RecordsTab key={key} userId={userId} categories={categories} onEdit={openEdit} onQuickAdd={openQuick} />}
+        {tab === "saved" && <SavedTab key={key} userId={userId} />}
+        {tab === "planning" && <PlanningTab key={key} userId={userId} />}
+        {tab === "summary" && <SummaryTab key={key} userId={userId} />}
       </main>
 
-      <nav
-        className="fixed bottom-0 inset-x-0 bg-white shadow-clay rounded-t-clay-xl flex justify-around px-2 pt-2"
-        style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 8px)" }}
-      >
-        {TABS.map((t) => {
-          const active = tab === t.id;
-          return (
-            <button
-              key={t.id}
-              onClick={() => setTab(t.id)}
-              className={`flex flex-col items-center gap-0.5 px-3 py-1 rounded-clay transition-transform active:scale-90 ${
-                active ? "text-nextp-blue" : "text-nextp-muted"
-              }`}
-            >
-              <span className={`text-xl ${active ? "scale-110" : ""}`}>{t.icon}</span>
-              <span className="text-[11px] font-bold">{t.label}</span>
-            </button>
-          );
-        })}
-      </nav>
+      <BottomNav tab={tab} setTab={setTab} onAdd={openAdd} />
+
+      {addOpen && (
+        <AddExpenseSheet
+          userId={userId}
+          categories={categories}
+          editing={editing}
+          presetCategory={preset}
+          defaults={{ date: todayISO(), time: nowHM(), method: PAYMENT_METHODS[0] }}
+          onClose={close}
+          onSaved={afterSave}
+        />
+      )}
     </div>
+  );
+}
+
+function BottomNav({
+  tab, setTab, onAdd,
+}: { tab: string; setTab: (t: Tab) => void; onAdd: () => void }) {
+  const item = (id: Tab, icon: string, label: string) => {
+    const active = tab === id;
+    return (
+      <button onClick={() => setTab(id)} className={`flex flex-col items-center gap-0.5 w-16 py-1 ${active ? "text-nextp-blue" : "text-nextp-muted"}`}>
+        <span className={`text-xl ${active ? "scale-110" : ""}`}>{icon}</span>
+        <span className="text-[10px] font-bold">{label}</span>
+      </button>
+    );
+  };
+  return (
+    <nav className="fixed bottom-0 inset-x-0 bg-white shadow-clay rounded-t-clay-xl flex items-center justify-between px-3"
+      style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 6px)", paddingTop: "8px" }}>
+      {item("records", "🏠", "Registos")}
+      {item("saved", "📦", "Guardados")}
+      <button onClick={onAdd} aria-label="Novo gasto"
+        className="w-16 h-16 -mt-8 rounded-full bg-nextp-blue text-white text-4xl font-black shadow-clay-btn grid place-items-center active:scale-90 transition-transform ring-4 ring-white">
+        ＋
+      </button>
+      {item("planning", "📅", "Planeamento")}
+      {item("summary", "📊", "Resumo")}
+    </nav>
   );
 }
