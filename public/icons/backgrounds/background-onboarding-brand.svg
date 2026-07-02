@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1440" height="1440" viewBox="0 0 1440 1440" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">NextP onboarding brand background</title>
+  <desc id="desc">NextP background</desc>
+  <defs>
+    <linearGradient id="bgBlue" x1="0" y1="0" x2="1440" y2="1440" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#72D7FF"/>
+      <stop offset="0.35" stop-color="#F7FBFF"/>
+      <stop offset="1" stop-color="#FFFFFF"/>
+    </linearGradient>
+    <linearGradient id="heroBlue" x1="0" y1="0" x2="1440" y2="1440" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#006DFF"/>
+      <stop offset="1" stop-color="#72D7FF"/>
+    </linearGradient>
+    <linearGradient id="coin" x1="0" y1="0" x2="120" y2="120">
+      <stop offset="0" stop-color="#FFF2A8"/><stop offset="0.55" stop-color="#FDB022"/><stop offset="1" stop-color="#F79009"/>
+    </linearGradient>
+    <filter id="blurSoft" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="28"/>
+    </filter>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="16" stdDeviation="18" flood-color="#006DFF" flood-opacity="0.18"/>
+    </filter>
+  </defs>
+  
+  <rect width="1440" height="1440" fill="url(#bgBlue)"/>
+  <circle cx="1140" cy="300" r="260" fill="#72D7FF" opacity="0.2" filter="url(#blurSoft)"/>
+  <circle cx="320" cy="1140" r="300" fill="#006DFF" opacity="0.12" filter="url(#blurSoft)"/>
+  <rect x="140" y="150" width="520" height="520" rx="140" fill="url(#heroBlue)" filter="url(#shadow)"/>
+  <circle cx="1030" cy="1040" r="76" fill="url(#coin)" filter="url(#shadow)"/>
+  <circle cx="1134" cy="960" r="42" fill="url(#coin)" filter="url(#shadow)"/>
+  <path d="M160 980c340-130 640-90 1120 40" stroke="#FFFFFF" stroke-width="12" stroke-linecap="round" opacity="0.55"/>
+
+</svg>

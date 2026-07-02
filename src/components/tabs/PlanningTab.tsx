@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { getSupabase } from "@/lib/supabase";
 import { eur, prettyDate } from "@/lib/format";
-import { CategoryIcon } from "@/lib/icons";
+import { CategoryIcon, PaymentDot, type DotState } from "@/lib/icons";
 import { ensureOccurrences, togglePaid, type Occurrence, type RecurringPayment } from "@/lib/recurring";
 
 const MONTHS = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
@@ -110,8 +110,7 @@ export default function PlanningTab({ userId }: { userId: string }) {
           payments.map((p) => {
             const o = byPayment.get(p.id);
             if (!o) return null;
-            const paid = o.status === "PAID";
-            const overdue = o.status === "OVERDUE";
+            const dot = o.status.toLowerCase() as DotState;
             return (
               <div key={p.id} className="clay-card flex items-center gap-3">
                 <div className="w-11 h-11 shrink-0"><CategoryIcon name={p.name} size={44} /></div>
@@ -119,11 +118,9 @@ export default function PlanningTab({ userId }: { userId: string }) {
                   <p className="font-bold truncate">{p.name}</p>
                   <p className="text-nextp-muted text-xs">{eur(Number(p.amount))} · vence {prettyDate(o.due_date)}</p>
                 </div>
-                <button onClick={() => onToggle(o)} aria-label={paid ? "marcar pendente" : "marcar pago"}
-                  className={`w-8 h-8 rounded-full grid place-items-center shadow-clay-sm transition-transform active:scale-90 ${
-                    paid ? "bg-nextp-blue text-white" : overdue ? "bg-nextp-danger/15 border-2 border-nextp-danger" : "bg-white border-2 border-nextp-cardsoft"
-                  }`}>
-                  {paid ? "✓" : overdue ? <span className="w-2 h-2 rounded-full bg-nextp-danger" /> : ""}
+                <button onClick={() => onToggle(o)} aria-label={o.status === "PAID" ? "marcar pendente" : "marcar pago"}
+                  className="shrink-0 active:scale-90 transition-transform">
+                  <PaymentDot state={dot} size={34} />
                 </button>
               </div>
             );

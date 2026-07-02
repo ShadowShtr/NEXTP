@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1080" height="1920" viewBox="0 0 1080 1920" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">NextP planning clouds background</title>
+  <desc id="desc">NextP background</desc>
+  <defs>
+    <linearGradient id="bgBlue" x1="0" y1="0" x2="1080" y2="1920" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#72D7FF"/>
+      <stop offset="0.35" stop-color="#F7FBFF"/>
+      <stop offset="1" stop-color="#FFFFFF"/>
+    </linearGradient>
+    <linearGradient id="heroBlue" x1="0" y1="0" x2="1080" y2="1920" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#006DFF"/>
+      <stop offset="1" stop-color="#72D7FF"/>
+    </linearGradient>
+    <linearGradient id="coin" x1="0" y1="0" x2="120" y2="120">
+      <stop offset="0" stop-color="#FFF2A8"/><stop offset="0.55" stop-color="#FDB022"/><stop offset="1" stop-color="#F79009"/>
+    </linearGradient>
+    <filter id="blurSoft" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="28"/>
+    </filter>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="16" stdDeviation="18" flood-color="#006DFF" flood-opacity="0.18"/>
+    </filter>
+  </defs>
+  
+  <rect width="1080" height="1920" fill="#F7FBFF"/>
+  <circle cx="250" cy="265" r="96" fill="#FFFFFF" filter="url(#shadow)"/>
+  <circle cx="342" cy="248" r="120" fill="#FFFFFF" filter="url(#shadow)"/>
+  <circle cx="462" cy="285" r="84" fill="#FFFFFF" filter="url(#shadow)"/>
+  <circle cx="830" cy="210" r="34" fill="url(#coin)" filter="url(#shadow)"/>
+  <rect x="70" y="420" width="940" height="220" rx="80" fill="url(#heroBlue)" opacity="0.95" filter="url(#shadow)"/>
+  <circle cx="150" cy="1260" r="240" fill="#006DFF" opacity="0.08" filter="url(#blurSoft)"/>
+  <circle cx="940" cy="1500" r="220" fill="#72D7FF" opacity="0.12" filter="url(#blurSoft)"/>
+
+</svg>

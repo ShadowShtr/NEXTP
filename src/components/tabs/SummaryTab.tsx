@@ -100,15 +100,16 @@ export default function SummaryTab({ userId }: { userId: string }) {
       </div>
 
       {/* Gastos Invisíveis */}
-      <div className="clay-card bg-gradient-to-br from-nextp-blue to-[#3D93FF] text-white space-y-1">
-        <div className="flex items-center gap-2">
-          <span className="text-2xl">🫥</span>
+      <div className="clay-card bg-gradient-to-br from-nextp-blue to-[#3D93FF] text-white flex items-center gap-3">
+        <div className="flex-1 space-y-1">
           <h2 className="font-black">Gastos Invisíveis</h2>
+          <p className="text-3xl font-black">{eur(stats.smallTotal)}</p>
+          <p className="text-white/80 text-sm">
+            {stats.smallCount} pequenas compras abaixo de {eur(SMALL_LIMIT)} — somam mais do que parece!
+          </p>
         </div>
-        <p className="text-3xl font-black">{eur(stats.smallTotal)}</p>
-        <p className="text-white/80 text-sm">
-          {stats.smallCount} pequenas compras abaixo de {eur(SMALL_LIMIT)} — somam mais do que parece!
-        </p>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/icons/features/feature-invisible-expenses.svg" width={72} height={72} alt="" draggable={false} />
       </div>
     </div>
   );

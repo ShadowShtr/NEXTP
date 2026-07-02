@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">Calendar checklist feature icon</title>
+  <desc id="desc">Calendar checklist feature icon - SVG asset for NextP</desc>
+
+  <defs>
+    <linearGradient id="tileBlue" x1="80" y1="40" x2="440" y2="475" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#72D7FF"/>
+      <stop offset="0.52" stop-color="#006DFF"/>
+      <stop offset="1" stop-color="#004FC7"/>
+    </linearGradient>
+    <linearGradient id="tileWhite" x1="80" y1="50" x2="430" y2="465" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFFFFF"/>
+      <stop offset="1" stop-color="#EEF6FF"/>
+    </linearGradient>
+    <linearGradient id="blueClay" x1="100" y1="80" x2="420" y2="440" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#BFEAFF"/>
+      <stop offset="0.42" stop-color="#2E86FF"/>
+      <stop offset="1" stop-color="#006DFF"/>
+    </linearGradient>
+    <linearGradient id="deepBlueClay" x1="120" y1="70" x2="420" y2="450" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#72D7FF"/>
+      <stop offset="0.45" stop-color="#006DFF"/>
+      <stop offset="1" stop-color="#003B99"/>
+    </linearGradient>
+    <linearGradient id="whiteClay" x1="90" y1="80" x2="420" y2="440" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFFFFF"/>
+      <stop offset="1" stop-color="#E6F0FF"/>
+    </linearGradient>
+    <linearGradient id="coinClay" x1="100" y1="70" x2="420" y2="440" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFF2A8"/>
+      <stop offset="0.55" stop-color="#FDB022"/>
+      <stop offset="1" stop-color="#F79009"/>
+    </linearGradient>
+    <linearGradient id="greenClay" x1="100" y1="70" x2="420" y2="440" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#D1FADF"/>
+      <stop offset="1" stop-color="#12B76A"/>
+    </linearGradient>
+    <linearGradient id="pinkClay" x1="100" y1="70" x2="420" y2="440" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFD6E0"/>
+      <stop offset="1" stop-color="#FF7A9A"/>
+    </linearGradient>
+    <linearGradient id="purpleClay" x1="100" y1="70" x2="420" y2="440" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#E7DDFF"/>
+      <stop offset="1" stop-color="#9B7EDE"/>
+    </linearGradient>
+    <linearGradient id="dangerClay" x1="100" y1="70" x2="420" y2="440" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFE2E2"/>
+      <stop offset="1" stop-color="#F04438"/>
+    </linearGradient>
+    <linearGradient id="grayClay" x1="100" y1="70" x2="420" y2="440" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#F5F7FA"/>
+      <stop offset="1" stop-color="#98A2B3"/>
+    </linearGradient>
+    <filter id="softShadow" x="-25%" y="-25%" width="150%" height="160%" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="18" stdDeviation="18" flood-color="#006DFF" flood-opacity="0.22"/>
+      <feDropShadow dx="0" dy="8" stdDeviation="8" flood-color="#101828" flood-opacity="0.10"/>
+    </filter>
+    <filter id="smallShadow" x="-25%" y="-25%" width="150%" height="150%" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="9" stdDeviation="7" flood-color="#101828" flood-opacity="0.18"/>
+    </filter>
+    <filter id="tinyShadow" x="-25%" y="-25%" width="150%" height="150%" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="5" stdDeviation="4" flood-color="#101828" flood-opacity="0.16"/>
+    </filter>
+  </defs>
+
+
+  <rect x="48" y="48" width="416" height="416" rx="92" fill="url(#tileWhite)" filter="url(#softShadow)"/>
+  <rect x="124" y="132" width="264" height="270" rx="42" fill="url(#whiteClay)" filter="url(#smallShadow)"/>
+  <rect x="124" y="132" width="264" height="74" rx="36" fill="url(#blueClay)"/>
+  <rect x="176" y="98" width="26" height="70" rx="13" fill="#006DFF"/>
+  <rect x="310" y="98" width="26" height="70" rx="13" fill="#006DFF"/>
+  <path d="M178 278l38 38 82-88" stroke="#12B76A" stroke-width="28" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="334" cy="324" r="44" fill="url(#coinClay)" filter="url(#tinyShadow)"/>
+  <path d="M314 324l16 16 28-34" stroke="#FFFFFF" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+
+</svg>

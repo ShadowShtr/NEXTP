@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { getSupabase } from "@/lib/supabase";
 import { eur, prettyDate, todayISO } from "@/lib/format";
+import { FeatureIcon } from "@/lib/icons";
 
 type SavedItem = {
   id: string;
@@ -58,7 +59,7 @@ export default function SavedTab({ userId }: { userId: string }) {
           <p className="text-white/80 text-xs font-bold uppercase">Total guardado</p>
           <p className="text-3xl font-black">{eur(total)}</p>
         </div>
-        <div className="text-4xl">👛</div>
+        <FeatureIcon name="wallet" size={64} />
       </div>
 
       {loading ? (
@@ -71,7 +72,8 @@ export default function SavedTab({ userId }: { userId: string }) {
         <div className="space-y-2">
           {items.map((it) => (
             <div key={it.id} className="clay-card flex items-center gap-3">
-              <div className="w-12 h-12 rounded-clay bg-nextp-cardsoft grid place-items-center text-2xl shrink-0">📦</div>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/icons/saved/saved-purchased.svg" width={48} height={48} alt="" className="shrink-0" draggable={false} />
               <div className="flex-1 min-w-0">
                 <p className="font-bold truncate">{it.name}</p>
                 <p className="text-nextp-muted text-xs">
