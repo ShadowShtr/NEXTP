@@ -5,6 +5,7 @@ import { getSupabase } from "@/lib/supabase";
 import type { Category, Expense } from "@/lib/types";
 import { PAYMENT_METHODS } from "@/lib/types";
 import { CategoryIcon } from "@/lib/icons";
+import { logMetric } from "@/lib/metrics";
 
 type Props = {
   onClose: () => void;
@@ -55,6 +56,7 @@ export default function AddExpenseSheet({
       : await sb.from("expenses").insert({ ...payload, user_id: userId, time: new Date().toTimeString().slice(0, 5), source: "MANUAL" });
     setSaving(false);
     if (error) return setErr(error.message);
+    logMetric(userId, isEdit ? "EXPENSE_UPDATED" : "EXPENSE_CREATED");
     setOk(true);
     setTimeout(onSaved, 400);
   }
@@ -66,6 +68,7 @@ export default function AddExpenseSheet({
     const { error } = await getSupabase().from("expenses").delete().eq("id", editing.id);
     setSaving(false);
     if (error) return setErr(error.message);
+    logMetric(userId, "EXPENSE_DELETED");
     onSaved();
   }
 

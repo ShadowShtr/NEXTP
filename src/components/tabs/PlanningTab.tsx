@@ -68,7 +68,7 @@ export default function PlanningTab({ userId }: { userId: string }) {
     setOcc((prev) => prev.map((x) => x.id === o.id
       ? { ...x, status: x.status === "PAID" ? "PENDING" : "PAID", paid_amount: x.status === "PAID" ? 0 : x.expected_amount }
       : x));
-    await togglePaid(o);
+    await togglePaid(userId, o);
     load();
   }
 

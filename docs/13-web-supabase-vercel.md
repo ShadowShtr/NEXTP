@@ -10,7 +10,7 @@ Versão web/PWA do NextP para usar no iPhone via Safari (e "instalável" no ecr�
 
 ## Passo 1 — Supabase
 1. Criar projeto em supabase.com (ou reutilizar um).
-2. **SQL Editor → New query** → colar e correr `supabase/schema.sql`.
+2. **SQL Editor → New query** → colar e correr `supabase/schema.sql`. É **idempotente e não destrutivo** — pode ser corrido de novo sempre que o schema for atualizado (ex.: ao adicionar a wishlist), sem perder dados existentes.
 3. **Authentication → Providers → Email**: ativar. (Sem password — usamos código OTP.)
 4. **Authentication → Email Templates → Magic Link**: garantir que o email mostra o **código**. Incluir no template, por ex.:
    ```

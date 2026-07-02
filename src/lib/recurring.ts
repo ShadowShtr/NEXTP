@@ -1,4 +1,5 @@
 import { getSupabase } from "@/lib/supabase";
+import { logMetric } from "@/lib/metrics";
 
 export type RecurringPayment = {
   id: string;
@@ -68,7 +69,7 @@ export async function ensureOccurrences(userId: string, year: number, month: num
 }
 
 /** Alterna pago/pendente de uma ocorrência (só afeta ESTE mês). */
-export async function togglePaid(occ: Occurrence) {
+export async function togglePaid(userId: string, occ: Occurrence) {
   const sb = getSupabase();
   const nowPaying = occ.status !== "PAID";
   await sb
@@ -80,4 +81,5 @@ export async function togglePaid(occ: Occurrence) {
       updated_at: new Date().toISOString(),
     })
     .eq("id", occ.id);
+  if (nowPaying) logMetric(userId, "RECURRING_PAYMENT_MARKED_PAID");
 }
