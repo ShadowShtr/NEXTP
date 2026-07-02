@@ -11,6 +11,7 @@ export type WishlistItem = {
   current_amount: number | null;
   amazon_url: string | null;
   external_url: string | null;
+  image_path: string | null;
   category_id: string | null;
   priority: WishlistPriority;
   status: WishlistStatus;
@@ -70,6 +71,7 @@ export async function convertWishlistToSavedItem(params: {
       amount: finalAmount,
       purchase_date: purchaseDate,
       purchase_url: wishlist.amazon_url || wishlist.external_url || null,
+      invoice_image_path: wishlist.image_path || null,
       source: "WISHLIST",
       wishlist_item_id: wishlist.id,
       count_as_monthly_expense: countAsMonthlyExpense,

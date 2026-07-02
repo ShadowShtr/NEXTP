@@ -15,6 +15,7 @@ type SavedItem = {
   store: string | null;
   warranty_until: string | null;
   purchase_url: string | null;
+  invoice_image_path: string | null;
   count_as_monthly_expense: boolean;
 };
 
@@ -101,8 +102,7 @@ export default function SavedTab({ userId }: { userId: string }) {
             {items.map((it) => (
               <div key={it.id} className="clay-card flex items-center gap-3">
                 <button onClick={() => setEditingSaved(it)} className="flex items-center gap-3 flex-1 min-w-0 text-left">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src="/icons/saved/saved-purchased.svg" width={48} height={48} alt="" className="shrink-0" draggable={false} />
+                  <ItemThumb src={it.invoice_image_path} fallback="/icons/saved/saved-purchased.svg" />
                   <div className="flex-1 min-w-0">
                     <p className="font-bold truncate">{it.name}</p>
                     <p className="text-nextp-muted text-xs">
@@ -133,8 +133,7 @@ export default function SavedTab({ userId }: { userId: string }) {
           {wishOpen.map((w) => (
             <div key={w.id} className="clay-card space-y-2">
               <button onClick={() => setEditingWish(w)} className="flex items-center gap-3 w-full text-left">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="/icons/saved/saved-wishlist.svg" width={48} height={48} alt="" className="shrink-0" draggable={false} />
+                <ItemThumb src={w.image_path} fallback="/icons/saved/saved-wishlist.svg" />
                 <div className="flex-1 min-w-0">
                   <p className="font-bold truncate">{w.name}</p>
                   <p className="text-nextp-muted text-xs">
@@ -200,12 +199,32 @@ function priorityLabel(p: WishlistPriority) {
   return { LOW: "Baixa", MEDIUM: "Média", HIGH: "Alta", URGENT: "Urgente" }[p] ?? p;
 }
 
+/** Miniatura do produto: mostra a foto colada pelo utilizador, ou o ícone genérico se não houver/falhar. */
+function ItemThumb({ src, fallback }: { src: string | null; fallback: string }) {
+  const [broken, setBroken] = useState(false);
+  const url = src && !broken ? src : fallback;
+  const isPhoto = !!(src && !broken);
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={url}
+      width={48}
+      height={48}
+      alt=""
+      className={`shrink-0 rounded-clay ${isPhoto ? "object-cover w-12 h-12 shadow-clay-sm" : ""}`}
+      onError={() => setBroken(true)}
+      draggable={false}
+    />
+  );
+}
+
 function SavedSheet({ userId, editing, onClose, onSaved }: { userId: string; editing: SavedItem | null; onClose: () => void; onSaved: () => void }) {
   const isEdit = !!editing;
   const [name, setName] = useState(editing?.name ?? "");
   const [amount, setAmount] = useState(editing ? String(editing.amount).replace(".", ",") : "");
   const [store, setStore] = useState(editing?.store ?? "");
   const [url, setUrl] = useState(editing?.purchase_url ?? "");
+  const [photoUrl, setPhotoUrl] = useState(editing?.invoice_image_path ?? "");
   const [date, setDate] = useState(editing?.purchase_date ?? todayISO());
   const [warranty, setWarranty] = useState(editing?.warranty_until ?? "");
   const [countMonth, setCountMonth] = useState(editing?.count_as_monthly_expense ?? false);
@@ -217,11 +236,13 @@ function SavedSheet({ userId, editing, onClose, onSaved }: { userId: string; edi
     if (!name.trim()) return setErr("Escreve o nome do item.");
     if (!value || value <= 0) return setErr("Valor inválido.");
     if (!isValidUrl(url)) return setErr("Link inválido.");
+    if (!isValidUrl(photoUrl)) return setErr("Link da foto inválido.");
     setSaving(true);
     const payload = {
       name: name.trim(), amount: value, purchase_date: date,
       store: store.trim() || null, warranty_until: warranty || null,
-      purchase_url: url.trim() || null, count_as_monthly_expense: countMonth,
+      purchase_url: url.trim() || null, invoice_image_path: photoUrl.trim() || null,
+      count_as_monthly_expense: countMonth,
       updated_at: new Date().toISOString(),
     };
     if (isEdit) {
@@ -261,6 +282,13 @@ function SavedSheet({ userId, editing, onClose, onSaved }: { userId: string; edi
       <input className="clay-input" inputMode="decimal" placeholder="Valor (€)" value={amount} onChange={(e) => setAmount(e.target.value)} />
       <input className="clay-input" placeholder="Loja (opcional)" value={store} onChange={(e) => setStore(e.target.value)} />
       <input className="clay-input" placeholder="Link da compra (opcional)" value={url} onChange={(e) => setUrl(e.target.value)} />
+      <div className="flex items-center gap-3">
+        <input className="clay-input flex-1" placeholder="Link da foto do produto (opcional)" value={photoUrl} onChange={(e) => setPhotoUrl(e.target.value)} />
+        {photoUrl && isValidUrl(photoUrl) && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={photoUrl} alt="" className="w-12 h-12 rounded-clay object-cover shrink-0 shadow-clay-sm" onError={(e) => (e.currentTarget.style.display = "none")} />
+        )}
+      </div>
       <div className="grid grid-cols-2 gap-3">
         <div>
           <p className="text-nextp-muted text-xs font-bold uppercase mb-1">Data compra</p>
@@ -289,6 +317,7 @@ function WishlistSheet({ userId, editing, onClose, onSaved }: { userId: string; 
   const [target, setTarget] = useState(editing?.target_amount != null ? String(editing.target_amount).replace(".", ",") : "");
   const [amazonUrl, setAmazonUrl] = useState(editing?.amazon_url ?? "");
   const [externalUrl, setExternalUrl] = useState(editing?.external_url ?? "");
+  const [photoUrl, setPhotoUrl] = useState(editing?.image_path ?? "");
   const [priority, setPriority] = useState<WishlistPriority>(editing?.priority ?? "MEDIUM");
   const [desired, setDesired] = useState(editing?.desired_date ?? "");
   const [note, setNote] = useState(editing?.note ?? "");
@@ -300,6 +329,7 @@ function WishlistSheet({ userId, editing, onClose, onSaved }: { userId: string; 
     if (!name.trim()) return setErr("Nome em falta.");
     if (!isValidUrl(amazonUrl)) return setErr("Link Amazon inválido.");
     if (!isValidUrl(externalUrl)) return setErr("Link externo inválido.");
+    if (!isValidUrl(photoUrl)) return setErr("Link da foto inválido.");
     setSaving(true);
     const payload = {
       name: name.trim(),
@@ -307,6 +337,7 @@ function WishlistSheet({ userId, editing, onClose, onSaved }: { userId: string; 
       target_amount: target ? parseFloat(target.replace(",", ".")) : null,
       amazon_url: amazonUrl.trim() || null,
       external_url: externalUrl.trim() || null,
+      image_path: photoUrl.trim() || null,
       priority, desired_date: desired || null, note: note.trim() || null,
       updated_at: new Date().toISOString(),
     };
@@ -337,6 +368,13 @@ function WishlistSheet({ userId, editing, onClose, onSaved }: { userId: string; 
       </div>
       <input className="clay-input" placeholder="Link Amazon (opcional)" value={amazonUrl ?? ""} onChange={(e) => setAmazonUrl(e.target.value)} />
       <input className="clay-input" placeholder="Link externo (opcional)" value={externalUrl ?? ""} onChange={(e) => setExternalUrl(e.target.value)} />
+      <div className="flex items-center gap-3">
+        <input className="clay-input flex-1" placeholder="Link da foto do produto (opcional)" value={photoUrl} onChange={(e) => setPhotoUrl(e.target.value)} />
+        {photoUrl && isValidUrl(photoUrl) && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={photoUrl} alt="" className="w-12 h-12 rounded-clay object-cover shrink-0 shadow-clay-sm" onError={(e) => (e.currentTarget.style.display = "none")} />
+        )}
+      </div>
       <div>
         <p className="text-nextp-muted text-xs font-bold uppercase mb-1">Prioridade</p>
         <div className="flex gap-2">
