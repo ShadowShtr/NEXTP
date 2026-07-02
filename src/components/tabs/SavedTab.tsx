@@ -401,7 +401,7 @@ function SheetShell({ title, onClose, children }: { title: string; onClose: () =
   return (
     <div className="fixed inset-0 z-40 flex items-end justify-center" style={{ height: "100dvh" }}>
       <div className="absolute inset-0 bg-black/30" onClick={onClose} />
-      <div className="relative w-full max-w-md bg-white rounded-t-clay-xl shadow-clay p-5 space-y-3 max-h-[85dvh] overflow-y-auto">
+      <div className="relative w-full max-w-md bg-white rounded-t-clay-xl shadow-clay p-5 space-y-3 max-h-[85dvh] overflow-y-auto overflow-x-hidden">
         <div className="flex items-center justify-between">
           <h2 className="text-xl font-black">{title}</h2>
           <button onClick={onClose} className="text-nextp-muted font-bold">Fechar</button>

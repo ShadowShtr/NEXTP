@@ -69,7 +69,7 @@ export default function RecurringDetailSheet({ userId, payment, occurrence, onCl
   return (
     <div className="fixed inset-0 z-40 flex items-end justify-center" style={{ height: "100dvh" }}>
       <div className="absolute inset-0 bg-black/30" onClick={onClose} />
-      <div className="relative w-full max-w-md bg-white rounded-t-clay-xl shadow-clay p-5 space-y-4 max-h-[85dvh] overflow-y-auto">
+      <div className="relative w-full max-w-md bg-white rounded-t-clay-xl shadow-clay p-5 space-y-4 max-h-[85dvh] overflow-y-auto overflow-x-hidden">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <CategoryIcon name={payment.name} size={40} />

@@ -299,23 +299,31 @@ function RecurringSheet({ userId, editing, onClose, onSaved }: { userId: string;
     if (!name.trim()) return setErr("Nome em falta.");
     if (!value || value <= 0) return setErr("Valor inválido.");
     if (!d || d < 1 || d > 31) return setErr("Dia entre 1 e 31.");
-    if (!startDate) return setErr("Data de início em falta.");
+    setSaving(true);
+
+    if (isEdit) {
+      // Editar só ajusta nome/valor/dia de vencimento — não mexe na data de
+      // início nem nas parcelas de uma conta já criada.
+      const { error } = await getSupabase()
+        .from("recurring_payments")
+        .update({ name: name.trim(), amount: value, due_day: d, updated_at: new Date().toISOString() })
+        .eq("id", editing!.id);
+      setSaving(false);
+      if (error) return setErr(error.message);
+      return onSaved();
+    }
+
+    if (!startDate) { setSaving(false); return setErr("Data de início em falta."); }
     let endDate: string | null = null;
     if (hasInstallments) {
       const n = parseInt(installments, 10);
-      if (!n || n < 1) return setErr("Número de parcelas inválido.");
+      if (!n || n < 1) { setSaving(false); return setErr("Número de parcelas inválido."); }
       endDate = addMonths(startDate, n - 1);
     }
-    setSaving(true);
-    const payload = {
+    const { error } = await getSupabase().from("recurring_payments").insert({
       name: name.trim(), amount: value, due_day: d,
-      start_date: startDate, end_date: endDate, updated_at: new Date().toISOString(),
-    };
-    const { error } = isEdit
-      ? await getSupabase().from("recurring_payments").update(payload).eq("id", editing!.id)
-      : await getSupabase().from("recurring_payments").insert({
-          ...payload, user_id: userId, repeat_type: "MONTHLY", is_active: true,
-        });
+      start_date: startDate, end_date: endDate, user_id: userId, repeat_type: "MONTHLY", is_active: true,
+    });
     setSaving(false);
     if (error) return setErr(error.message);
     onSaved();
@@ -337,22 +345,26 @@ function RecurringSheet({ userId, editing, onClose, onSaved }: { userId: string;
         <input className="clay-input" inputMode="decimal" placeholder="Valor (€)" value={amount} onChange={(e) => setAmount(e.target.value)} />
         <input className="clay-input" inputMode="numeric" placeholder="Dia venc. (1-31)" value={day} onChange={(e) => setDay(e.target.value)} />
       </div>
-      <div>
-        <p className="text-nextp-muted text-xs font-bold uppercase mb-1">Data de início</p>
-        <input type="date" className="clay-input" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
-      </div>
-      <label className="flex items-center gap-3 clay-card-soft cursor-pointer">
-        <input type="checkbox" checked={hasInstallments} onChange={(e) => setHasInstallments(e.target.checked)} className="w-5 h-5 accent-nextp-blue" />
-        <span className="text-sm font-bold">Tem número de parcelas? (ex.: empréstimo, prestação)</span>
-      </label>
-      {hasInstallments && (
-        <div>
-          <p className="text-nextp-muted text-xs font-bold uppercase mb-1">Número de parcelas</p>
-          <input className="clay-input" inputMode="numeric" placeholder="ex.: 8" value={installments} onChange={(e) => setInstallments(e.target.value)} />
-          {installments && !isNaN(parseInt(installments, 10)) && (
-            <p className="text-nextp-muted text-xs mt-1">Termina em {addMonths(startDate, parseInt(installments, 10) - 1)}</p>
+      {!isEdit && (
+        <>
+          <div>
+            <p className="text-nextp-muted text-xs font-bold uppercase mb-1">Data de início</p>
+            <input type="date" className="clay-input w-full box-border min-w-0" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+          </div>
+          <label className="flex items-center gap-3 clay-card-soft cursor-pointer">
+            <input type="checkbox" checked={hasInstallments} onChange={(e) => setHasInstallments(e.target.checked)} className="w-5 h-5 accent-nextp-blue shrink-0" />
+            <span className="text-sm font-bold">Tem número de parcelas? (ex.: empréstimo, prestação)</span>
+          </label>
+          {hasInstallments && (
+            <div>
+              <p className="text-nextp-muted text-xs font-bold uppercase mb-1">Número de parcelas</p>
+              <input className="clay-input" inputMode="numeric" placeholder="ex.: 8" value={installments} onChange={(e) => setInstallments(e.target.value)} />
+              {installments && !isNaN(parseInt(installments, 10)) && (
+                <p className="text-nextp-muted text-xs mt-1 break-words">Termina em {addMonths(startDate, parseInt(installments, 10) - 1)}</p>
+              )}
+            </div>
           )}
-        </div>
+        </>
       )}
       {err && <p className="text-nextp-danger text-sm text-center">{err}</p>}
       <button className="clay-btn w-full text-lg" onClick={save} disabled={saving}>{saving ? "A guardar…" : isEdit ? "Guardar alterações" : "Guardar conta"}</button>
@@ -438,7 +450,7 @@ function SheetShell({ title, onClose, children }: { title: string; onClose: () =
   return (
     <div className="fixed inset-0 z-30 flex items-end justify-center" style={{ height: "100dvh" }}>
       <div className="absolute inset-0 bg-black/30" onClick={onClose} />
-      <div className="relative w-full max-w-md bg-white rounded-t-clay-xl shadow-clay p-5 space-y-3 max-h-[85dvh] overflow-y-auto">
+      <div className="relative w-full max-w-md bg-white rounded-t-clay-xl shadow-clay p-5 space-y-3 max-h-[85dvh] overflow-y-auto overflow-x-hidden">
         <div className="flex items-center justify-between">
           <h2 className="text-xl font-black">{title}</h2>
           <button onClick={onClose} className="text-nextp-muted font-bold">Fechar</button>
