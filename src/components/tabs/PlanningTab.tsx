@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react
 import { getSupabase } from "@/lib/supabase";
 import { eur, prettyDate } from "@/lib/format";
 import { CategoryIcon, PaymentDot, type DotState } from "@/lib/icons";
-import { ensureOccurrences, togglePaid, type Occurrence, type RecurringPayment } from "@/lib/recurring";
+import { ensureOccurrences, installmentLabel, togglePaid, type Occurrence, type RecurringPayment } from "@/lib/recurring";
 import RecurringDetailSheet from "@/components/RecurringDetailSheet";
 import { useLockBodyScroll } from "@/lib/useLockBodyScroll";
 
@@ -58,7 +58,7 @@ export default function PlanningTab({ userId }: { userId: string }) {
     await ensureOccurrences(userId, year, month);
     const sb = getSupabase();
     const [p, o, f] = await Promise.all([
-      sb.from("recurring_payments").select("id,name,amount,due_day,category_id,repeat_type,is_active").eq("user_id", userId).eq("is_active", true),
+      sb.from("recurring_payments").select("id,name,amount,due_day,category_id,repeat_type,is_active,start_date,end_date").eq("user_id", userId).eq("is_active", true),
       sb.from("recurring_occurrences").select("*").eq("user_id", userId).eq("year", year).eq("month", month),
       sb.from("planning_items").select("*").eq("user_id", userId).neq("type", "RECURRING").order("due_date"),
     ]);
@@ -152,13 +152,17 @@ export default function PlanningTab({ userId }: { userId: string }) {
             const o = byPayment.get(p.id);
             if (!o) return null;
             const dot = o.status.toLowerCase() as DotState;
+            const installment = installmentLabel(p, year, month);
             return (
               <div key={p.id} className="clay-card flex items-center gap-3">
                 <button onClick={() => setDetail({ payment: p, occ: o })} className="flex items-center gap-3 flex-1 min-w-0 text-left">
                   <div className="w-11 h-11 shrink-0"><CategoryIcon name={p.name} size={44} /></div>
                   <div className="flex-1 min-w-0">
                     <p className="font-bold truncate">{p.name}</p>
-                    <p className="text-nextp-muted text-xs">{eur(Number(p.amount))} · vence dia {p.due_day}</p>
+                    <p className="text-nextp-muted text-xs">
+                      {eur(Number(p.amount))} · vence dia {p.due_day}
+                      {installment && <span className="text-nextp-blue font-bold"> · parcela {installment}</span>}
+                    </p>
                   </div>
                 </button>
                 <button onClick={() => onQuickToggle(o)} aria-label={o.status === "PAID" ? "marcar pendente" : "marcar pago"}
@@ -261,11 +265,31 @@ function MonthPill({ label, value }: { label: string; value: number }) {
   );
 }
 
+function addMonths(dateStr: string, months: number): string {
+  const [y, m, d] = dateStr.split("-").map(Number);
+  const total = m - 1 + months;
+  const ny = y + Math.floor(total / 12);
+  const nm = (total % 12) + 1;
+  const last = new Date(ny, nm, 0).getDate();
+  return `${ny}-${String(nm).padStart(2, "0")}-${String(Math.min(d, last)).padStart(2, "0")}`;
+}
+
+function monthsBetween(startStr: string, endStr: string): number {
+  const [sy, sm] = startStr.split("-").map(Number);
+  const [ey, em] = endStr.split("-").map(Number);
+  return (ey - sy) * 12 + (em - sm) + 1;
+}
+
 function RecurringSheet({ userId, editing, onClose, onSaved }: { userId: string; editing: RecurringPayment | null; onClose: () => void; onSaved: () => void }) {
   const isEdit = !!editing;
   const [name, setName] = useState(editing?.name ?? "");
   const [amount, setAmount] = useState(editing ? String(editing.amount).replace(".", ",") : "");
   const [day, setDay] = useState(editing ? String(editing.due_day) : "1");
+  const [startDate, setStartDate] = useState(editing?.start_date ?? new Date().toISOString().slice(0, 10));
+  const [hasInstallments, setHasInstallments] = useState(!!editing?.end_date);
+  const [installments, setInstallments] = useState(
+    editing?.end_date && editing?.start_date ? String(monthsBetween(editing.start_date, editing.end_date)) : ""
+  );
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
@@ -275,12 +299,22 @@ function RecurringSheet({ userId, editing, onClose, onSaved }: { userId: string;
     if (!name.trim()) return setErr("Nome em falta.");
     if (!value || value <= 0) return setErr("Valor inválido.");
     if (!d || d < 1 || d > 31) return setErr("Dia entre 1 e 31.");
+    if (!startDate) return setErr("Data de início em falta.");
+    let endDate: string | null = null;
+    if (hasInstallments) {
+      const n = parseInt(installments, 10);
+      if (!n || n < 1) return setErr("Número de parcelas inválido.");
+      endDate = addMonths(startDate, n - 1);
+    }
     setSaving(true);
-    const payload = { name: name.trim(), amount: value, due_day: d, updated_at: new Date().toISOString() };
+    const payload = {
+      name: name.trim(), amount: value, due_day: d,
+      start_date: startDate, end_date: endDate, updated_at: new Date().toISOString(),
+    };
     const { error } = isEdit
       ? await getSupabase().from("recurring_payments").update(payload).eq("id", editing!.id)
       : await getSupabase().from("recurring_payments").insert({
-          ...payload, user_id: userId, repeat_type: "MONTHLY", start_date: new Date().toISOString().slice(0, 10), is_active: true,
+          ...payload, user_id: userId, repeat_type: "MONTHLY", is_active: true,
         });
     setSaving(false);
     if (error) return setErr(error.message);
@@ -298,11 +332,28 @@ function RecurringSheet({ userId, editing, onClose, onSaved }: { userId: string;
 
   return (
     <SheetShell title={isEdit ? "Editar conta recorrente" : "Nova conta recorrente"} onClose={onClose}>
-      <input className="clay-input" placeholder="Nome (ex.: Internet, Netflix)" value={name} onChange={(e) => setName(e.target.value)} autoFocus />
+      <input className="clay-input" placeholder="Nome (ex.: Internet, Netflix)" value={name} onChange={(e) => setName(e.target.value)} />
       <div className="grid grid-cols-2 gap-3">
         <input className="clay-input" inputMode="decimal" placeholder="Valor (€)" value={amount} onChange={(e) => setAmount(e.target.value)} />
         <input className="clay-input" inputMode="numeric" placeholder="Dia venc. (1-31)" value={day} onChange={(e) => setDay(e.target.value)} />
       </div>
+      <div>
+        <p className="text-nextp-muted text-xs font-bold uppercase mb-1">Data de início</p>
+        <input type="date" className="clay-input" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+      </div>
+      <label className="flex items-center gap-3 clay-card-soft cursor-pointer">
+        <input type="checkbox" checked={hasInstallments} onChange={(e) => setHasInstallments(e.target.checked)} className="w-5 h-5 accent-nextp-blue" />
+        <span className="text-sm font-bold">Tem número de parcelas? (ex.: empréstimo, prestação)</span>
+      </label>
+      {hasInstallments && (
+        <div>
+          <p className="text-nextp-muted text-xs font-bold uppercase mb-1">Número de parcelas</p>
+          <input className="clay-input" inputMode="numeric" placeholder="ex.: 8" value={installments} onChange={(e) => setInstallments(e.target.value)} />
+          {installments && !isNaN(parseInt(installments, 10)) && (
+            <p className="text-nextp-muted text-xs mt-1">Termina em {addMonths(startDate, parseInt(installments, 10) - 1)}</p>
+          )}
+        </div>
+      )}
       {err && <p className="text-nextp-danger text-sm text-center">{err}</p>}
       <button className="clay-btn w-full text-lg" onClick={save} disabled={saving}>{saving ? "A guardar…" : isEdit ? "Guardar alterações" : "Guardar conta"}</button>
       {isEdit && <button className="w-full text-nextp-danger font-bold py-2" onClick={deactivate} disabled={saving}>Remover conta recorrente</button>}
@@ -352,7 +403,7 @@ function PlanSheet({ userId, defaultType, editing, onClose, onSaved }: {
 
   return (
     <SheetShell title={isEdit ? "Editar item" : "Nova conta / dívida / compra"} onClose={onClose}>
-      <input className="clay-input" placeholder="Nome" value={name} onChange={(e) => setName(e.target.value)} autoFocus />
+      <input className="clay-input" placeholder="Nome" value={name} onChange={(e) => setName(e.target.value)} />
       <div className="flex gap-2 overflow-x-auto pb-1">
         {PLAN_TABS.map(([v, l]) => (
           <button key={v} onClick={() => setType(v)}
@@ -385,9 +436,9 @@ function PlanSheet({ userId, defaultType, editing, onClose, onSaved }: {
 function SheetShell({ title, onClose, children }: { title: string; onClose: () => void; children: ReactNode }) {
   useLockBodyScroll();
   return (
-    <div className="fixed inset-0 z-30 flex items-end justify-center">
+    <div className="fixed inset-0 z-30 flex items-end justify-center" style={{ height: "100dvh" }}>
       <div className="absolute inset-0 bg-black/30" onClick={onClose} />
-      <div className="relative w-full max-w-md bg-white rounded-t-clay-xl shadow-clay p-5 space-y-3 max-h-[90vh] overflow-y-auto">
+      <div className="relative w-full max-w-md bg-white rounded-t-clay-xl shadow-clay p-5 space-y-3 max-h-[85dvh] overflow-y-auto">
         <div className="flex items-center justify-between">
           <h2 className="text-xl font-black">{title}</h2>
           <button onClick={onClose} className="text-nextp-muted font-bold">Fechar</button>

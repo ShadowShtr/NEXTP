@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { eur, prettyDate } from "@/lib/format";
 import { CategoryIcon, PaymentDot, type DotState } from "@/lib/icons";
 import {
-  getOccurrenceHistory, markPartial, setPaidStatus,
+  getOccurrenceHistory, installmentLabel, markPartial, setPaidStatus,
   type Occurrence, type RecurringPayment,
 } from "@/lib/recurring";
 import { useLockBodyScroll } from "@/lib/useLockBodyScroll";
@@ -67,9 +67,9 @@ export default function RecurringDetailSheet({ userId, payment, occurrence, onCl
   }
 
   return (
-    <div className="fixed inset-0 z-40 flex items-end justify-center">
+    <div className="fixed inset-0 z-40 flex items-end justify-center" style={{ height: "100dvh" }}>
       <div className="absolute inset-0 bg-black/30" onClick={onClose} />
-      <div className="relative w-full max-w-md bg-white rounded-t-clay-xl shadow-clay p-5 space-y-4 max-h-[90vh] overflow-y-auto">
+      <div className="relative w-full max-w-md bg-white rounded-t-clay-xl shadow-clay p-5 space-y-4 max-h-[85dvh] overflow-y-auto">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <CategoryIcon name={payment.name} size={40} />
@@ -84,8 +84,12 @@ export default function RecurringDetailSheet({ userId, payment, occurrence, onCl
         <div className="clay-card-soft space-y-2">
           <Row label="Valor" value={eur(Number(payment.amount))} />
           <Row label="Dia de vencimento" value={String(payment.due_day)} />
+          <Row label="Data de início" value={prettyDate(payment.start_date)} />
           <Row label="Repetição" value={payment.repeat_type === "MONTHLY" ? "Mensal" : payment.repeat_type} />
           <Row label="Próximo vencimento" value={prettyDate(occ.due_date)} />
+          {installmentLabel(payment, occ.year, occ.month) && (
+            <Row label="Parcela" value={installmentLabel(payment, occ.year, occ.month)!} />
+          )}
           <div className="flex items-center justify-between pt-1">
             <span className="text-nextp-muted text-sm">Estado em {MONTHS[occ.month - 1]}/{occ.year}</span>
             <div className="flex items-center gap-2">
@@ -109,7 +113,7 @@ export default function RecurringDetailSheet({ userId, payment, occurrence, onCl
         {partialOpen && (
           <div className="clay-card-soft space-y-2">
             <p className="text-sm font-bold">Valor pago parcialmente</p>
-            <input className="clay-input" inputMode="decimal" placeholder="€" value={partialValue} onChange={(e) => setPartialValue(e.target.value)} autoFocus />
+            <input className="clay-input" inputMode="decimal" placeholder="€" value={partialValue} onChange={(e) => setPartialValue(e.target.value)} />
             <div className="flex gap-2">
               <button onClick={confirmPartial} disabled={busy} className="clay-btn flex-1 text-sm py-2">Confirmar</button>
               <button onClick={() => setPartialOpen(false)} className="clay-btn-ghost flex-1 text-sm py-2">Cancelar</button>

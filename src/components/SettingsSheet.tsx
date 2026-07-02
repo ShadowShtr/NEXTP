@@ -67,9 +67,9 @@ export default function SettingsSheet({ userId, email, onClose, onLogout }: {
   }
 
   return (
-    <div className="fixed inset-0 z-40 flex items-end justify-center">
+    <div className="fixed inset-0 z-40 flex items-end justify-center" style={{ height: "100dvh" }}>
       <div className="absolute inset-0 bg-black/30" onClick={onClose} />
-      <div className="relative w-full max-w-md bg-white rounded-t-clay-xl shadow-clay p-5 space-y-4 max-h-[90vh] overflow-y-auto">
+      <div className="relative w-full max-w-md bg-white rounded-t-clay-xl shadow-clay p-5 space-y-4 max-h-[85dvh] overflow-y-auto">
         <div className="flex items-center justify-between">
           <h2 className="text-xl font-black">Configurações</h2>
           <button onClick={onClose} className="text-nextp-muted font-bold">Fechar</button>

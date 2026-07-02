@@ -75,9 +75,9 @@ export default function AddExpenseSheet({
   }
 
   return (
-    <div className="fixed inset-0 z-40 flex items-end justify-center">
+    <div className="fixed inset-0 z-40 flex items-end justify-center" style={{ height: "100dvh" }}>
       <div className="absolute inset-0 bg-black/30" onClick={onClose} />
-      <div className="relative w-full max-w-md bg-white rounded-t-clay-xl shadow-clay p-5 space-y-4 max-h-[90vh] overflow-y-auto">
+      <div className="relative w-full max-w-md bg-white rounded-t-clay-xl shadow-clay p-5 space-y-4 max-h-[85dvh] overflow-y-auto">
         {ok ? (
           <div className="py-12 text-center space-y-2">
             <div className="text-6xl">✅</div>
@@ -95,7 +95,7 @@ export default function AddExpenseSheet({
               <input
                 className="w-full bg-transparent text-white text-4xl font-black text-center outline-none placeholder:text-white/60"
                 inputMode="decimal" placeholder="0,00 €" value={amount}
-                onChange={(e) => setAmount(e.target.value)} autoFocus={!isEdit}
+                onChange={(e) => setAmount(e.target.value)}
               />
             </div>
 

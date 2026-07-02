@@ -9,7 +9,23 @@ export type RecurringPayment = {
   category_id: string | null;
   repeat_type: string;
   is_active: boolean;
+  start_date: string;
+  end_date: string | null;
 };
+
+/**
+ * "Parcela X/Y" quando a conta tem data final definida (empréstimo, prestação).
+ * Sem end_date, a conta é recorrente indefinidamente e isto devolve null.
+ */
+export function installmentLabel(payment: RecurringPayment, year: number, month: number): string | null {
+  if (!payment.end_date || !payment.start_date) return null;
+  const [sy, sm] = payment.start_date.split("-").map(Number);
+  const [ey, em] = payment.end_date.split("-").map(Number);
+  const total = (ey - sy) * 12 + (em - sm) + 1;
+  const current = (year - sy) * 12 + (month - sm) + 1;
+  if (total <= 0 || current < 1 || current > total) return null;
+  return `${current}/${total}`;
+}
 
 export type Occurrence = {
   id: string;
@@ -37,7 +53,7 @@ export async function ensureOccurrences(userId: string, year: number, month: num
   const sb = getSupabase();
   const { data: payments } = await sb
     .from("recurring_payments")
-    .select("id, name, amount, due_day, category_id, repeat_type, is_active")
+    .select("id, name, amount, due_day, category_id, repeat_type, is_active, start_date, end_date")
     .eq("user_id", userId)
     .eq("is_active", true);
   if (!payments || payments.length === 0) return;
@@ -50,8 +66,16 @@ export async function ensureOccurrences(userId: string, year: number, month: num
     .eq("month", month);
   const have = new Set((existing ?? []).map((o) => o.recurring_payment_id));
 
+  const monthKey = `${year}-${String(month).padStart(2, "0")}`;
+
   const toCreate = (payments as RecurringPayment[])
     .filter((p) => !have.has(p.id))
+    // respeita a janela de parcelas: não gera ocorrências antes do início nem depois do fim.
+    .filter((p) => {
+      if (p.start_date && monthKey < p.start_date.slice(0, 7)) return false;
+      if (p.end_date && monthKey > p.end_date.slice(0, 7)) return false;
+      return true;
+    })
     .map((p) => {
       const day = clampDay(year, month, p.due_day);
       const due = `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;

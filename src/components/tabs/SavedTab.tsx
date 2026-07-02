@@ -257,7 +257,7 @@ function SavedSheet({ userId, editing, onClose, onSaved }: { userId: string; edi
 
   return (
     <SheetShell title={isEdit ? "Editar item guardado" : "Novo item guardado"} onClose={onClose}>
-      <input className="clay-input" placeholder="Nome (ex.: Air Fryer)" value={name} onChange={(e) => setName(e.target.value)} autoFocus />
+      <input className="clay-input" placeholder="Nome (ex.: Air Fryer)" value={name} onChange={(e) => setName(e.target.value)} />
       <input className="clay-input" inputMode="decimal" placeholder="Valor (€)" value={amount} onChange={(e) => setAmount(e.target.value)} />
       <input className="clay-input" placeholder="Loja (opcional)" value={store} onChange={(e) => setStore(e.target.value)} />
       <input className="clay-input" placeholder="Link da compra (opcional)" value={url} onChange={(e) => setUrl(e.target.value)} />
@@ -330,7 +330,7 @@ function WishlistSheet({ userId, editing, onClose, onSaved }: { userId: string; 
 
   return (
     <SheetShell title={isEdit ? "Editar produto desejado" : "Novo produto desejado"} onClose={onClose}>
-      <input className="clay-input" placeholder="Nome (ex.: Air Fryer nova)" value={name} onChange={(e) => setName(e.target.value)} autoFocus />
+      <input className="clay-input" placeholder="Nome (ex.: Air Fryer nova)" value={name} onChange={(e) => setName(e.target.value)} />
       <div className="grid grid-cols-2 gap-3">
         <input className="clay-input" inputMode="decimal" placeholder="Valor previsto (€)" value={expected} onChange={(e) => setExpected(e.target.value)} />
         <input className="clay-input" inputMode="decimal" placeholder="Preço alvo (€)" value={target} onChange={(e) => setTarget(e.target.value)} />
@@ -381,7 +381,7 @@ function ConvertSheet({ userId, item, onClose, onDone }: { userId: string; item:
   return (
     <SheetShell title={`Comprou "${item.name}"?`} onClose={onClose}>
       <p className="text-nextp-muted text-sm">Confirma os dados para mover para “Comprados”.</p>
-      <input className="clay-input" inputMode="decimal" placeholder="Valor final (€)" value={amount} onChange={(e) => setAmount(e.target.value)} autoFocus />
+      <input className="clay-input" inputMode="decimal" placeholder="Valor final (€)" value={amount} onChange={(e) => setAmount(e.target.value)} />
       <div>
         <p className="text-nextp-muted text-xs font-bold uppercase mb-1">Data da compra</p>
         <input type="date" className="clay-input" value={date} onChange={(e) => setDate(e.target.value)} />
@@ -399,9 +399,9 @@ function ConvertSheet({ userId, item, onClose, onDone }: { userId: string; item:
 function SheetShell({ title, onClose, children }: { title: string; onClose: () => void; children: ReactNode }) {
   useLockBodyScroll();
   return (
-    <div className="fixed inset-0 z-40 flex items-end justify-center">
+    <div className="fixed inset-0 z-40 flex items-end justify-center" style={{ height: "100dvh" }}>
       <div className="absolute inset-0 bg-black/30" onClick={onClose} />
-      <div className="relative w-full max-w-md bg-white rounded-t-clay-xl shadow-clay p-5 space-y-3 max-h-[90vh] overflow-y-auto">
+      <div className="relative w-full max-w-md bg-white rounded-t-clay-xl shadow-clay p-5 space-y-3 max-h-[85dvh] overflow-y-auto">
         <div className="flex items-center justify-between">
           <h2 className="text-xl font-black">{title}</h2>
           <button onClick={onClose} className="text-nextp-muted font-bold">Fechar</button>
