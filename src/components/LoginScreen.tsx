@@ -21,12 +21,15 @@ export default function LoginScreen() {
     setLoading(true);
     const { error } = await getSupabase().auth.signInWithOtp({
       email,
-      options: { shouldCreateUser: true },
+      options: {
+        shouldCreateUser: true,
+        emailRedirectTo: window.location.origin,
+      },
     });
     setLoading(false);
     if (error) return setMsg(error.message);
     setStage("code");
-    setMsg("Enviámos um código para o teu email.");
+    setMsg("Verifica o teu email.");
   }
 
   async function verify() {
@@ -70,6 +73,17 @@ export default function LoginScreen() {
           </div>
         ) : (
           <div className="space-y-3">
+            <div className="clay-card-soft text-center space-y-1">
+              <div className="text-3xl">📩</div>
+              <p className="font-bold">Abre o email e toca no link para entrar.</p>
+              <p className="text-nextp-muted text-xs">
+                Enviado para {email}. Vê também o spam.
+              </p>
+            </div>
+
+            <p className="text-center text-nextp-muted text-xs">
+              Recebeste um código de 6 dígitos? Escreve-o aqui:
+            </p>
             <input
               className="clay-input text-center tracking-[0.4em] text-xl font-black"
               inputMode="numeric"
@@ -78,8 +92,8 @@ export default function LoginScreen() {
               value={code}
               onChange={(e) => setCode(e.target.value)}
             />
-            <button className="clay-btn w-full" onClick={verify} disabled={loading}>
-              {loading ? "A entrar…" : "Entrar"}
+            <button className="clay-btn w-full" onClick={verify} disabled={loading || code.trim().length < 6}>
+              {loading ? "A entrar…" : "Entrar com código"}
             </button>
             <button className="clay-btn-ghost w-full" onClick={() => setStage("email")}>
               Voltar
