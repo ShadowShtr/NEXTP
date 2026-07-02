@@ -72,10 +72,10 @@ export async function ensureOccurrences(userId: string, year: number, month: num
 }
 
 /** Alterna pago/pendente de uma ocorrência (só afeta ESTE mês). Sem lançar gasto. */
-export async function togglePaid(userId: string, occ: Occurrence) {
+export async function togglePaid(userId: string, occ: Occurrence): Promise<{ error: string | null }> {
   const sb = getSupabase();
   const nowPaying = occ.status !== "PAID";
-  await sb
+  const { error } = await sb
     .from("recurring_occurrences")
     .update({
       status: nowPaying ? "PAID" : "PENDING",
@@ -84,7 +84,9 @@ export async function togglePaid(userId: string, occ: Occurrence) {
       updated_at: new Date().toISOString(),
     })
     .eq("id", occ.id);
+  if (error) return { error: error.message };
   if (nowPaying) logMetric(userId, "RECURRING_PAYMENT_MARKED_PAID");
+  return { error: null };
 }
 
 /**

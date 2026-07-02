@@ -97,11 +97,16 @@ export default function PlanningTab({ userId }: { userId: string }) {
   }
 
   async function onQuickToggle(o: Occurrence) {
+    // Atualização otimista local — sem recarregar a página (evita saltar para o topo).
+    const nowPaying = o.status !== "PAID";
     setOcc((prev) => prev.map((x) => x.id === o.id
-      ? { ...x, status: x.status === "PAID" ? "PENDING" : "PAID", paid_amount: x.status === "PAID" ? 0 : x.expected_amount }
+      ? { ...x, status: nowPaying ? "PAID" : "PENDING", paid_amount: nowPaying ? x.expected_amount : 0 }
       : x));
-    await togglePaid(userId, o);
-    load();
+    const { error } = await togglePaid(userId, o);
+    if (error) {
+      // reverte se a gravação falhar
+      setOcc((prev) => prev.map((x) => (x.id === o.id ? o : x)));
+    }
   }
 
   return (

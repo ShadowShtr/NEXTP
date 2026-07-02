@@ -1,50 +1,23 @@
 /*
-  NextP Service Worker — apenas para experiência tipo-app e arranque rápido.
-  IMPORTANTE: NUNCA toca nos dados. Os dados vivem no Supabase (rede) e a
-  sessão no armazenamento do browser — o SW só faz cache de ficheiros estáticos.
-  Pedidos ao Supabase e navegação são sempre "network-first".
+  NextP Service Worker — versão de limpeza.
+  O SW anterior fazia cache-first dos ficheiros estáticos, o que prendia
+  versões antigas da app (F5 e a app instalada no ecrã inicial nunca
+  atualizavam). Este script substitui-o: limpa todas as caches antigas,
+  desregista-se a si próprio e recarrega as janelas abertas — a partir daí
+  a app passa a carregar sempre diretamente da rede, como um site normal.
 */
-const CACHE = "nextp-shell-v1";
-const ASSETS = ["/", "/manifest.webmanifest", "/icons/icon-192.png", "/icons/icon-512.png"];
-
-self.addEventListener("install", (e) => {
-  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(ASSETS)).catch(() => {}));
+self.addEventListener("install", () => {
   self.skipWaiting();
 });
 
-self.addEventListener("activate", (e) => {
-  e.waitUntil(
-    caches.keys().then((keys) => Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k))))
-  );
-  self.clients.claim();
-});
-
-self.addEventListener("fetch", (e) => {
-  const req = e.request;
-  const url = new URL(req.url);
-
-  // Nunca intercetar API do Supabase nem métodos não-GET.
-  if (req.method !== "GET" || url.hostname.endsWith("supabase.co")) return;
-
-  // Navegação: network-first, cai para cache offline.
-  if (req.mode === "navigate") {
-    e.respondWith(fetch(req).catch(() => caches.match("/")));
-    return;
-  }
-
-  // Estáticos: cache-first, atualiza em segundo plano.
-  e.respondWith(
-    caches.match(req).then((cached) => {
-      const net = fetch(req)
-        .then((res) => {
-          if (res.ok && url.origin === self.location.origin) {
-            const copy = res.clone();
-            caches.open(CACHE).then((c) => c.put(req, copy));
-          }
-          return res;
-        })
-        .catch(() => cached);
-      return cached || net;
-    })
+self.addEventListener("activate", (event) => {
+  event.waitUntil(
+    (async () => {
+      const keys = await caches.keys();
+      await Promise.all(keys.map((k) => caches.delete(k)));
+      await self.registration.unregister();
+      const clients = await self.clients.matchAll({ type: "window" });
+      for (const client of clients) client.navigate(client.url);
+    })()
   );
 });
