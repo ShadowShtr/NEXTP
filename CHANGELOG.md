@@ -5,6 +5,9 @@ Todas as mudanças relevantes do NextP. Formato baseado em [Keep a Changelog](ht
 ## [Unreleased]
 
 ### Added
+- **Assets NextP Clay System**: SVG masters de ícones (categorias, features, payment dots, saved, system, app) e backgrounds em `assets/`, servidos em `public/icons/`. Ligados à UI web (`CategoryIcon`, `FeatureIcon`, `PaymentDot`). Masterplan em `docs/19-claude-task-masterplan.md`.
+- **Web app (Next.js + Supabase)**: 4 abas funcionais (Registos com edição, Guardados, Planeamento com checklist recorrente, Resumo com gráficos e Gastos Invisíveis), navegação com **+ central**, login email+password, deploy Vercel.
+
 - **Fase 1 — Base do projeto**
   - Estrutura de pastas, `.gitignore`, README e documentação inicial (`docs/`).
   - Projeto Android (Kotlin + Jetpack Compose + Material 3) com Gradle version catalog.
