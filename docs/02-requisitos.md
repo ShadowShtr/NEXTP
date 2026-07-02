@@ -14,6 +14,11 @@
 - Perguntar "contar como gasto do mês?" (Sim/Não).
 - Lista, filtro por categoria, valor total, alerta de fim de garantia.
 
+### Guardados — Wishlist Amazon ("Quero comprar")
+- Tabs internas em Guardados: **Comprados** (existente) e **Quero comprar** (nova).
+- Utilizador cola link (Amazon ou externo) e preenche nome/preço manualmente — **sem scraping, sem busca automática de preço/imagem** (ver `18-amazon-wishlist.md`).
+- Botão abre o link numa nova aba; botão "Marcar como comprado" converte o item desejado num `SavedItem` (pergunta valor final, data e se conta como gasto do mês) — conversão nunca duplica.
+
 ### Planeamento
 - Tipos: conta futura, dívida, compra desejada, parcela, objetivo, pagamento recorrente.
 - Campos: nome, tipo, valor total/pago/restante, vencimento, prioridade, estado, repetição.

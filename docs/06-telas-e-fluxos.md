@@ -14,9 +14,17 @@
 **Novo gasto:** valor · descrição · categoria · forma de pagamento · data · hora · observação · guardar (com animação de sucesso).
 
 ## Guardados
-- Lista de bens; botão adicionar; filtros; total guardado; ilustração de cofrinho.
+Tabs internas: **Comprados** · **Quero comprar** (ver `18-amazon-wishlist.md`).
 
-**Novo item guardado:** nome · valor · data · loja · categoria · garantia · foto da fatura · **contar como gasto do mês? (Sim/Não)** · observação.
+### Comprados
+- Lista de bens; botão adicionar; filtros; total guardado; ilustração de carteira (`feature-wallet.svg`).
+
+**Novo item guardado:** nome · valor · data · loja · categoria · garantia · foto da fatura · link da compra · **contar como gasto do mês? (Sim/Não)** · observação.
+
+### Quero comprar
+- Lista de produtos desejados; total previsto; botão adicionar.
+
+**Novo produto desejado:** nome · valor previsto · preço alvo · preço atual · link Amazon · link externo · categoria · prioridade · data desejada · observação. Botões: **Abrir Amazon** (nova aba) e **Marcar como comprado** (converte em item de Comprados, pedindo valor final, data e se conta como gasto do mês).
 
 ## Planeamento
 - Lista de contas/dívidas/compras futuras separadas por estado.

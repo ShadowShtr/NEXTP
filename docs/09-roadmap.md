@@ -2,16 +2,22 @@
 
 Desenvolvimento **linear**, sem pular etapas. Cada fase termina com commit e atualização de docs/CHANGELOG.
 
-- [x] **Fase 1 — Base**: projeto Android, arquitetura, estrutura, docs iniciais, Git, Room/DataStore, entidades.
-- [x] **Fase 2 — Design system e ícone**: `05-design-system.md`, `12-logo-e-icone.md`, paleta, componentes base, botões, cards clay, ícones de categoria, ícone do APK, navegação das 4 abas.
-- [ ] **Fase 3 — Registos**: telas de registos e novo gasto, salvar/listar/editar/apagar, categorias, totais dia/mês, botões rápidos, sugestões.
-- [ ] **Fase 4 — Guardados**: tela e formulário, salvar, contar ou não como gasto, alerta de garantia, cards.
-- [ ] **Fase 5 — Planeamento**: contas futuras, dívidas, compras desejadas, marcar pago/parcial, lembretes, barras de progresso.
-- [ ] **Fase 6 — Pagamentos recorrentes**: templates + ocorrências mensais, checklist com bolinhas, histórico por mês, geração mensal, notificações, lançar como gasto, resumo. Doc `11`.
-- [ ] **Fase 7 — Resumo e gráficos**: estatísticas diárias/mensais, gráficos, Gastos Invisíveis, comparação mensal, recorrentes pagos x pendentes.
+> O produto pivotou para **web/PWA** (Next.js + Supabase, deploy Vercel) — ver `docs/13-web-supabase-vercel.md`. O projeto Android original fica arquivado em `android/`. As fases abaixo descrevem o estado da versão web (produto ativo).
+
+- [x] **Fase 1 — Base**: estrutura, Git, GitHub, Vercel, Supabase, schema com RLS.
+- [x] **Fase 2 — Design system e ícone**: paleta, componentes clay, navegação com **+** central, ícone adaptativo.
+- [x] **Fase 3 — Registos**: registar/editar/apagar gasto, categorias rápidas, totais dia/mês, card de orçamento com progresso.
+- [x] **Fase 4 — Guardados (base)**: registar item, garantia, contar ou não como gasto do mês.
+- [ ] **Fase 4b — Guardados: Wishlist Amazon**: tabs Comprados/Quero comprar, formulário de produto desejado, conversão em comprado sem duplicar. Doc `18-amazon-wishlist.md`. *(em curso)*
+- [x] **Fase 5 — Planeamento**: contas futuras, dívidas, compras desejadas, barras de progresso.
+- [x] **Fase 6 — Pagamentos recorrentes**: templates + ocorrências mensais, checklist com bolinhas (SVG master), mês independente. Doc `11`.
+- [x] **Fase 7 — Resumo e gráficos**: estatísticas, gráfico por categoria, evolução diária, Gastos Invisíveis.
 - [ ] **Fase 8 — Notificações**: lembretes, resumos, vencimentos, limites, garantias, config.
-- [ ] **Fase 9 — Google e backup**: login, backup/restauro, tela de backup, último backup, export JSON.
-- [ ] **Fase 10 — Refinamento**: UI, bugs, testes, performance, docs, changelog, release + tag.
+- [ ] **Fase 9 — Backup**: exportação/importação JSON (o backup na nuvem já existe via Supabase; falta export manual).
+- [ ] **Fase 10 — Refinamento**: dashboard motivacional, histórico/detalhe de recorrente, ilustrações 3D completas, testes, polish visual final (ver TASK 20 em `docs/19`).
 
 ## Entregável por etapa
 Para cada fase documentar: o que foi feito, arquivos criados/alterados, como testar, o que falta, riscos técnicos, atualização de docs, commit.
+
+## Masterplan detalhado
+A partir da Fase 4b, o trabalho segue as tasks numeradas de `docs/19-claude-task-masterplan.md` (TASK 0–20), adaptadas ao stack web.

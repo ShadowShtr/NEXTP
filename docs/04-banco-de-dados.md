@@ -1,6 +1,8 @@
 # 04 — Banco de Dados
 
-Persistência com **Room/SQLite** (`nextp.db`). Preferências simples em **DataStore**. **Nunca** cache como armazenamento principal.
+Persistência com **Room/SQLite** (`nextp.db`) na versão Android (`android/`, arquivada). Preferências simples em **DataStore**. **Nunca** cache como armazenamento principal.
+
+> **Produto ativo (web):** o schema real em produção é Postgres via Supabase — ver `supabase/schema.sql` e `docs/13-web-supabase-vercel.md`. As entidades abaixo descrevem o modelo lógico comum às duas versões; os nomes de coluna no Supabase usam `snake_case` (ex.: `category_id` em vez de `categoryId`).
 
 ## Entidades
 
@@ -12,7 +14,12 @@ Persistência com **Room/SQLite** (`nextp.db`). Preferências simples em **DataS
 Índices: `date`, `categoryId`.
 
 ### SavedItem (`saved_items`)
-`id, name, amount, purchaseDate, store?, category?, warrantyUntil?, invoiceImagePath?, note?, countAsMonthlyExpense, createdAt, updatedAt`
+`id, name, amount, purchaseDate, store?, category?, warrantyUntil?, invoiceImagePath?, purchaseUrl?, source (MANUAL|WISHLIST), wishlistItemId?, note?, countAsMonthlyExpense, createdAt, updatedAt`
+
+### WishlistItem (`wishlist_items`) — "Quero comprar", ver `docs/18-amazon-wishlist.md`
+`id, name, expectedAmount, targetAmount?, currentAmount?, amazonUrl?, externalUrl?, imagePath?, categoryId?, priority, status (WISHLIST|PURCHASED), desiredDate?, note?, convertedSavedItemId?, createdAt, updatedAt`
+Índices: `status`, `priority`, `categoryId`, `desiredDate`.
+Conversão para `SavedItem` é transacional (ver `src/lib/wishlist.ts`): cria o `SavedItem`, marca `status = PURCHASED`, grava `convertedSavedItemId` — nunca duplica.
 
 ### PlanningItem (`planning_items`)
 `id, name, type, totalAmount, paidAmount, remainingAmount, dueDate?, priority, status, repeatType, note?, createdAt, updatedAt`
