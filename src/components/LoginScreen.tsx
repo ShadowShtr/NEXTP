@@ -4,42 +4,41 @@ import { useState } from "react";
 import { getSupabase } from "@/lib/supabase";
 
 /**
- * Login por CÓDIGO (OTP) enviado por email — ideal para PWA no iPhone
- * (não sai da app para abrir links). Os dados nunca dependem deste login:
- * se a sessão expirar, faz-se login outra vez e os dados continuam na nuvem.
+ * Login por EMAIL + PASSWORD — sem emails, sem limites de envio.
+ * Primeira vez: cria a conta automaticamente (requer "Confirm email" DESLIGADO
+ * no Supabase). Depois é só entrar. Os dados vivem no Supabase (nunca se perdem).
  */
 export default function LoginScreen() {
   const [email, setEmail] = useState("");
-  const [code, setCode] = useState("");
-  const [stage, setStage] = useState<"email" | "code">("email");
+  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
 
-  async function sendCode() {
+  async function submit() {
     setMsg(null);
     if (!email.includes("@")) return setMsg("Escreve um email válido.");
+    if (password.length < 6) return setMsg("A password precisa de 6+ caracteres.");
     setLoading(true);
-    const { error } = await getSupabase().auth.signInWithOtp({
-      email,
-      options: {
-        shouldCreateUser: true,
-        emailRedirectTo: window.location.origin,
-      },
-    });
-    setLoading(false);
-    if (error) return setMsg(error.message);
-    setStage("code");
-    setMsg("Verifica o teu email.");
-  }
+    const sb = getSupabase();
 
-  async function verify() {
-    setMsg(null);
-    setLoading(true);
-    const { error } = await getSupabase().auth.verifyOtp({
-      email,
-      token: code.trim(),
-      type: "email",
-    });
+    // 1) tenta entrar
+    let { data, error } = await sb.auth.signInWithPassword({ email, password });
+
+    // 2) se ainda não existe conta, cria e entra
+    if (error && /invalid login credentials/i.test(error.message)) {
+      const up = await sb.auth.signUp({ email, password });
+      if (up.error) {
+        setLoading(false);
+        return setMsg(up.error.message);
+      }
+      if (!up.data.session) {
+        setLoading(false);
+        return setMsg('Conta criada. Desliga "Confirm email" no Supabase e tenta entrar.');
+      }
+      data = up.data;
+      error = null;
+    }
+
     setLoading(false);
     if (error) return setMsg(error.message);
     // onAuthStateChange trata do resto.
@@ -56,52 +55,34 @@ export default function LoginScreen() {
           <p className="text-nextp-muted text-sm">O teu ajudador financeiro pessoal</p>
         </div>
 
-        {stage === "email" ? (
-          <div className="space-y-3">
-            <input
-              className="clay-input"
-              type="email"
-              inputMode="email"
-              autoComplete="email"
-              placeholder="o.teu@email.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
-            <button className="clay-btn w-full" onClick={sendCode} disabled={loading}>
-              {loading ? "A enviar…" : "Receber código"}
-            </button>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            <div className="clay-card-soft text-center space-y-1">
-              <div className="text-3xl">📩</div>
-              <p className="font-bold">Abre o email e toca no link para entrar.</p>
-              <p className="text-nextp-muted text-xs">
-                Enviado para {email}. Vê também o spam.
-              </p>
-            </div>
-
-            <p className="text-center text-nextp-muted text-xs">
-              Recebeste um código de 6 dígitos? Escreve-o aqui:
-            </p>
-            <input
-              className="clay-input text-center tracking-[0.4em] text-xl font-black"
-              inputMode="numeric"
-              autoComplete="one-time-code"
-              placeholder="000000"
-              value={code}
-              onChange={(e) => setCode(e.target.value)}
-            />
-            <button className="clay-btn w-full" onClick={verify} disabled={loading || code.trim().length < 6}>
-              {loading ? "A entrar…" : "Entrar com código"}
-            </button>
-            <button className="clay-btn-ghost w-full" onClick={() => setStage("email")}>
-              Voltar
-            </button>
-          </div>
-        )}
+        <div className="space-y-3">
+          <input
+            className="clay-input"
+            type="email"
+            inputMode="email"
+            autoComplete="email"
+            placeholder="Email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
+          <input
+            className="clay-input"
+            type="password"
+            autoComplete="current-password"
+            placeholder="Password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && submit()}
+          />
+          <button className="clay-btn w-full text-lg" onClick={submit} disabled={loading}>
+            {loading ? "A entrar…" : "Entrar / Criar conta"}
+          </button>
+        </div>
 
         {msg && <p className="text-center text-sm text-nextp-muted">{msg}</p>}
+        <p className="text-center text-xs text-nextp-muted">
+          Primeira vez? A conta é criada automaticamente.
+        </p>
       </div>
     </div>
   );
