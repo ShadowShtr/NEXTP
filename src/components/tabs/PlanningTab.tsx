@@ -5,6 +5,7 @@ import { getSupabase } from "@/lib/supabase";
 import { eur, prettyDate } from "@/lib/format";
 import { CategoryIcon, PaymentDot, type DotState } from "@/lib/icons";
 import { ensureOccurrences, togglePaid, type Occurrence, type RecurringPayment } from "@/lib/recurring";
+import RecurringDetailSheet from "@/components/RecurringDetailSheet";
 
 const MONTHS = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
 
@@ -13,29 +14,35 @@ type PlanningItem = {
   due_date: string | null; status: string;
 };
 
+const PLAN_TABS: [string, string][] = [
+  ["FUTURE_BILL", "Contas"], ["DEBT", "Dívidas"], ["WISH", "Compras"], ["GOAL", "Objetivos"],
+];
+
 export default function PlanningTab({ userId }: { userId: string }) {
   const now = new Date();
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth() + 1);
   const [payments, setPayments] = useState<RecurringPayment[]>([]);
   const [occ, setOcc] = useState<Occurrence[]>([]);
-  const [future, setFuture] = useState<PlanningItem[]>([]);
+  const [items, setItems] = useState<PlanningItem[]>([]);
+  const [planTab, setPlanTab] = useState<string>("FUTURE_BILL");
   const [loading, setLoading] = useState(true);
   const [openRec, setOpenRec] = useState(false);
   const [openPlan, setOpenPlan] = useState(false);
+  const [detail, setDetail] = useState<{ payment: RecurringPayment; occ: Occurrence } | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
     await ensureOccurrences(userId, year, month);
     const sb = getSupabase();
     const [p, o, f] = await Promise.all([
-      sb.from("recurring_payments").select("id,name,amount,due_day,is_active").eq("user_id", userId).eq("is_active", true),
+      sb.from("recurring_payments").select("id,name,amount,due_day,category_id,repeat_type,is_active").eq("user_id", userId).eq("is_active", true),
       sb.from("recurring_occurrences").select("*").eq("user_id", userId).eq("year", year).eq("month", month),
       sb.from("planning_items").select("*").eq("user_id", userId).neq("type", "RECURRING").order("due_date"),
     ]);
     setPayments((p.data ?? []) as RecurringPayment[]);
     setOcc((o.data ?? []) as Occurrence[]);
-    setFuture((f.data ?? []) as PlanningItem[]);
+    setItems((f.data ?? []) as PlanningItem[]);
     setLoading(false);
   }, [userId, year, month]);
 
@@ -57,14 +64,15 @@ export default function PlanningTab({ userId }: { userId: string }) {
     return { paid, pending, total };
   }, [occ]);
 
+  const itemsForTab = useMemo(() => items.filter((it) => it.type === planTab), [items, planTab]);
+
   function shiftMonth(delta: number) {
     let m = month + delta, y = year;
     if (m < 1) { m = 12; y--; } if (m > 12) { m = 1; y++; }
     setMonth(m); setYear(y);
   }
 
-  async function onToggle(o: Occurrence) {
-    // otimista
+  async function onQuickToggle(o: Occurrence) {
     setOcc((prev) => prev.map((x) => x.id === o.id
       ? { ...x, status: x.status === "PAID" ? "PENDING" : "PAID", paid_amount: x.status === "PAID" ? 0 : x.expected_amount }
       : x));
@@ -113,12 +121,14 @@ export default function PlanningTab({ userId }: { userId: string }) {
             const dot = o.status.toLowerCase() as DotState;
             return (
               <div key={p.id} className="clay-card flex items-center gap-3">
-                <div className="w-11 h-11 shrink-0"><CategoryIcon name={p.name} size={44} /></div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-bold truncate">{p.name}</p>
-                  <p className="text-nextp-muted text-xs">{eur(Number(p.amount))} · vence {prettyDate(o.due_date)}</p>
-                </div>
-                <button onClick={() => onToggle(o)} aria-label={o.status === "PAID" ? "marcar pendente" : "marcar pago"}
+                <button onClick={() => setDetail({ payment: p, occ: o })} className="flex items-center gap-3 flex-1 min-w-0 text-left">
+                  <div className="w-11 h-11 shrink-0"><CategoryIcon name={p.name} size={44} /></div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-bold truncate">{p.name}</p>
+                    <p className="text-nextp-muted text-xs">{eur(Number(p.amount))} · vence {prettyDate(o.due_date)}</p>
+                  </div>
+                </button>
+                <button onClick={() => onQuickToggle(o)} aria-label={o.status === "PAID" ? "marcar pendente" : "marcar pago"}
                   className="shrink-0 active:scale-90 transition-transform">
                   <PaymentDot state={dot} size={34} />
                 </button>
@@ -129,13 +139,22 @@ export default function PlanningTab({ userId }: { userId: string }) {
         <button onClick={() => setOpenRec(true)} className="clay-btn w-full">+ Nova conta recorrente</button>
       </div>
 
-      {/* Contas futuras / dívidas / compras desejadas */}
+      {/* Contas / dívidas / compras / objetivos (tabs) */}
       <div className="space-y-2">
-        <h2 className="font-black text-lg">Contas & compras futuras</h2>
-        {future.length === 0 ? (
-          <div className="clay-card text-center text-nextp-muted py-8">Sem itens futuros.</div>
+        <h2 className="font-black text-lg">Contas, dívidas e compras futuras</h2>
+        <div className="flex gap-2 clay-card-soft p-1.5">
+          {PLAN_TABS.map(([v, l]) => (
+            <button key={v} onClick={() => setPlanTab(v)}
+              className={`flex-1 py-1.5 rounded-clay font-bold text-xs transition-colors ${planTab === v ? "bg-nextp-blue text-white shadow-clay-sm" : "text-nextp-muted"}`}>
+              {l}
+            </button>
+          ))}
+        </div>
+
+        {itemsForTab.length === 0 ? (
+          <div className="clay-card text-center text-nextp-muted py-8">Sem itens nesta categoria.</div>
         ) : (
-          future.map((it) => {
+          itemsForTab.map((it) => {
             const pct = it.total_amount > 0 ? Math.min(100, Math.round((it.paid_amount / it.total_amount) * 100)) : 0;
             return (
               <div key={it.id} className="clay-card space-y-2">
@@ -154,11 +173,22 @@ export default function PlanningTab({ userId }: { userId: string }) {
             );
           })
         )}
-        <button onClick={() => setOpenPlan(true)} className="clay-btn-ghost w-full">+ Nova conta / dívida / compra</button>
+        <button onClick={() => setOpenPlan(true)} className="clay-btn-ghost w-full">+ Nova conta ou dívida</button>
       </div>
 
       {openRec && <RecurringSheet userId={userId} onClose={() => setOpenRec(false)} onSaved={() => { setOpenRec(false); load(); }} />}
-      {openPlan && <PlanSheet userId={userId} onClose={() => setOpenPlan(false)} onSaved={() => { setOpenPlan(false); load(); }} />}
+      {openPlan && (
+        <PlanSheet userId={userId} defaultType={planTab} onClose={() => setOpenPlan(false)} onSaved={() => { setOpenPlan(false); load(); }} />
+      )}
+      {detail && (
+        <RecurringDetailSheet
+          userId={userId}
+          payment={detail.payment}
+          occurrence={detail.occ}
+          onClose={() => setDetail(null)}
+          onChanged={load}
+        />
+      )}
     </div>
   );
 }
@@ -199,14 +229,13 @@ function RecurringSheet({ userId, onClose, onSaved }: { userId: string; onClose:
   );
 }
 
-function PlanSheet({ userId, onClose, onSaved }: { userId: string; onClose: () => void; onSaved: () => void }) {
+function PlanSheet({ userId, defaultType, onClose, onSaved }: { userId: string; defaultType: string; onClose: () => void; onSaved: () => void }) {
   const [name, setName] = useState("");
   const [amount, setAmount] = useState("");
-  const [type, setType] = useState("FUTURE_BILL");
+  const [type, setType] = useState(defaultType);
   const [due, setDue] = useState("");
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState<string | null>(null);
-  const TYPES = [["FUTURE_BILL", "Conta futura"], ["DEBT", "Dívida"], ["WISH", "Compra desejada"], ["GOAL", "Objetivo"]];
 
   async function save() {
     const value = parseFloat(amount.replace(",", "."));
@@ -226,7 +255,7 @@ function PlanSheet({ userId, onClose, onSaved }: { userId: string; onClose: () =
     <SheetShell title="Nova conta / dívida / compra" onClose={onClose}>
       <input className="clay-input" placeholder="Nome" value={name} onChange={(e) => setName(e.target.value)} autoFocus />
       <div className="flex gap-2 overflow-x-auto pb-1">
-        {TYPES.map(([v, l]) => (
+        {PLAN_TABS.map(([v, l]) => (
           <button key={v} onClick={() => setType(v)}
             className={`clay-chip whitespace-nowrap ${type === v ? "bg-nextp-blue text-white" : "bg-nextp-cardsoft text-nextp-ink"}`}>{l}</button>
         ))}
