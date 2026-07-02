@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { getSupabase } from "@/lib/supabase";
 import type { Category } from "@/lib/types";
 import { PAYMENT_METHODS } from "@/lib/types";
+import { CategoryIcon } from "@/lib/icons";
 
 type Props = {
   open: boolean;
@@ -113,12 +114,12 @@ export default function AddExpenseSheet({
                   <button
                     key={c.id}
                     onClick={() => setCategoryId(c.id)}
-                    className={`clay-chip whitespace-nowrap flex items-center gap-1 ${
-                      categoryId === c.id ? "bg-nextp-blue text-white" : "bg-nextp-cardsoft text-nextp-ink"
+                    className={`flex flex-col items-center gap-1 shrink-0 p-1 rounded-clay ${
+                      categoryId === c.id ? "ring-2 ring-nextp-blue" : ""
                     }`}
                   >
-                    <span>{c.icon}</span>
-                    {c.name}
+                    <CategoryIcon name={c.name} size={44} />
+                    <span className="text-[10px] font-bold text-nextp-ink">{c.name}</span>
                   </button>
                 ))}
               </div>

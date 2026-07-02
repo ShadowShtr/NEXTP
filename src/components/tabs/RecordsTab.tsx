@@ -5,6 +5,7 @@ import { getSupabase } from "@/lib/supabase";
 import type { Category, Expense } from "@/lib/types";
 import { PAYMENT_METHODS } from "@/lib/types";
 import { eur, monthBounds, nowHM, todayISO } from "@/lib/format";
+import { CategoryIcon } from "@/lib/icons";
 import AddExpenseSheet from "@/components/AddExpenseSheet";
 
 export default function RecordsTab({ userId }: { userId: string }) {
@@ -81,11 +82,10 @@ export default function RecordsTab({ userId }: { userId: string }) {
           <button
             key={c.id}
             onClick={() => openAdd(c.id)}
-            className="clay-chip bg-white whitespace-nowrap flex items-center gap-1"
-            style={{ color: c.color }}
+            className="flex flex-col items-center gap-1 shrink-0 active:scale-90 transition-transform"
           >
-            <span>{c.icon}</span>
-            <span className="text-nextp-ink">{c.name}</span>
+            <CategoryIcon name={c.name} size={52} />
+            <span className="text-[11px] font-bold text-nextp-ink">{c.name}</span>
           </button>
         ))}
       </div>
@@ -108,11 +108,8 @@ export default function RecordsTab({ userId }: { userId: string }) {
             const cat = e.category_id ? catById.get(e.category_id) : undefined;
             return (
               <div key={e.id} className="clay-card flex items-center gap-3 py-3">
-                <div
-                  className="w-11 h-11 rounded-clay grid place-items-center text-xl shadow-clay-sm shrink-0"
-                  style={{ background: (cat?.color ?? "#98A2B3") + "22" }}
-                >
-                  {cat?.icon ?? "📦"}
+                <div className="w-11 h-11 shrink-0">
+                  <CategoryIcon name={cat?.name ?? "Outros"} size={44} />
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="font-bold truncate">{e.description}</p>

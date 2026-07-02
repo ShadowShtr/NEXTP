@@ -5,7 +5,9 @@ import type { Session } from "@supabase/supabase-js";
 import { getSupabase } from "@/lib/supabase";
 import { ensureDefaultCategories } from "@/lib/seed";
 import RecordsTab from "@/components/tabs/RecordsTab";
-import { PlaceholderTab } from "@/components/tabs/PlaceholderTab";
+import SavedTab from "@/components/tabs/SavedTab";
+import PlanningTab from "@/components/tabs/PlanningTab";
+import SummaryTab from "@/components/tabs/SummaryTab";
 
 type Tab = "records" | "saved" | "planning" | "summary";
 
@@ -44,15 +46,9 @@ export default function AppShell({ session }: { session: Session }) {
 
       <main className="flex-1 overflow-y-auto pb-28">
         {tab === "records" && <RecordsTab userId={userId} />}
-        {tab === "saved" && (
-          <PlaceholderTab title="Guardados" emoji="📦" text="Bens e compras importantes (Fase seguinte)." />
-        )}
-        {tab === "planning" && (
-          <PlaceholderTab title="Planeamento" emoji="📅" text="Contas, dívidas e pagamentos recorrentes (Fase seguinte)." />
-        )}
-        {tab === "summary" && (
-          <PlaceholderTab title="Resumo" emoji="📊" text="Gráficos e Gastos Invisíveis (Fase seguinte)." />
-        )}
+        {tab === "saved" && <SavedTab userId={userId} />}
+        {tab === "planning" && <PlanningTab userId={userId} />}
+        {tab === "summary" && <SummaryTab userId={userId} />}
       </main>
 
       <nav
