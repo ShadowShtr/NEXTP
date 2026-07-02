@@ -6,6 +6,7 @@ import type { Category, Expense } from "@/lib/types";
 import { PAYMENT_METHODS } from "@/lib/types";
 import { CategoryIcon } from "@/lib/icons";
 import { logMetric } from "@/lib/metrics";
+import { useLockBodyScroll } from "@/lib/useLockBodyScroll";
 
 type Props = {
   onClose: () => void;
@@ -21,6 +22,7 @@ type Props = {
 export default function AddExpenseSheet({
   onClose, onSaved, userId, categories, presetCategory, editing, defaults,
 }: Props) {
+  useLockBodyScroll();
   const isEdit = !!editing;
   const [amount, setAmount] = useState(editing ? String(editing.amount).replace(".", ",") : "");
   const [description, setDescription] = useState(editing?.description ?? "");

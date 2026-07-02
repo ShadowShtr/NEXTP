@@ -6,6 +6,7 @@ import { eur, prettyDate } from "@/lib/format";
 import { CategoryIcon, PaymentDot, type DotState } from "@/lib/icons";
 import { ensureOccurrences, togglePaid, type Occurrence, type RecurringPayment } from "@/lib/recurring";
 import RecurringDetailSheet from "@/components/RecurringDetailSheet";
+import { useLockBodyScroll } from "@/lib/useLockBodyScroll";
 
 const MONTHS = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
 
@@ -377,6 +378,7 @@ function PlanSheet({ userId, defaultType, editing, onClose, onSaved }: {
 }
 
 function SheetShell({ title, onClose, children }: { title: string; onClose: () => void; children: ReactNode }) {
+  useLockBodyScroll();
   return (
     <div className="fixed inset-0 z-30 flex items-end justify-center">
       <div className="absolute inset-0 bg-black/30" onClick={onClose} />

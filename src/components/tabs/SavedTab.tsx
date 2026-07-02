@@ -5,6 +5,7 @@ import { getSupabase } from "@/lib/supabase";
 import { eur, prettyDate, todayISO } from "@/lib/format";
 import { convertWishlistToSavedItem, isAmazonUrl, isValidUrl, type WishlistItem, type WishlistPriority } from "@/lib/wishlist";
 import { logMetric } from "@/lib/metrics";
+import { useLockBodyScroll } from "@/lib/useLockBodyScroll";
 
 type SavedItem = {
   id: string;
@@ -396,6 +397,7 @@ function ConvertSheet({ userId, item, onClose, onDone }: { userId: string; item:
 }
 
 function SheetShell({ title, onClose, children }: { title: string; onClose: () => void; children: ReactNode }) {
+  useLockBodyScroll();
   return (
     <div className="fixed inset-0 z-40 flex items-end justify-center">
       <div className="absolute inset-0 bg-black/30" onClick={onClose} />

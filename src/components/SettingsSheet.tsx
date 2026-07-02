@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { getSupabase } from "@/lib/supabase";
 import { exportBackup, importBackup } from "@/lib/backup";
 import { FeatureIcon } from "@/lib/icons";
+import { useLockBodyScroll } from "@/lib/useLockBodyScroll";
 
 type Settings = {
   daily_reminder_enabled: boolean;
@@ -16,6 +17,7 @@ type Settings = {
 export default function SettingsSheet({ userId, email, onClose, onLogout }: {
   userId: string; email: string; onClose: () => void; onLogout: () => void;
 }) {
+  useLockBodyScroll();
   const [s, setS] = useState<Settings | null>(null);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);

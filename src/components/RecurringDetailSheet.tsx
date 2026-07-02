@@ -7,6 +7,7 @@ import {
   getOccurrenceHistory, markPartial, setPaidStatus,
   type Occurrence, type RecurringPayment,
 } from "@/lib/recurring";
+import { useLockBodyScroll } from "@/lib/useLockBodyScroll";
 
 const MONTHS = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
 
@@ -21,6 +22,7 @@ type Props = {
 
 /** TASK 16 — Detalhe da conta recorrente + histórico mensal completo. */
 export default function RecurringDetailSheet({ userId, payment, occurrence, onClose, onChanged, onEdit }: Props) {
+  useLockBodyScroll();
   const [occ, setOcc] = useState(occurrence);
   const [history, setHistory] = useState<Occurrence[] | null>(null);
   const [showHistory, setShowHistory] = useState(false);
