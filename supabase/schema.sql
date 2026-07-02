@@ -154,9 +154,13 @@ create table if not exists public.user_settings (
   daily_reminder_time    text not null default '21:00',
   monthly_budget         numeric,
   small_expense_limit    numeric not null default 5,
+  backup_enabled         boolean not null default false,
+  last_backup_at         timestamptz,
   theme                  text not null default 'system',
   updated_at             timestamptz not null default now()
 );
+alter table public.user_settings add column if not exists backup_enabled boolean not null default false;
+alter table public.user_settings add column if not exists last_backup_at timestamptz;
 
 -- ---------- METRIC EVENTS (ver docs/16-metricas.md) ----------
 create table if not exists public.metric_events (

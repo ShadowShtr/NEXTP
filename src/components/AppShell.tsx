@@ -12,17 +12,20 @@ import SavedTab from "@/components/tabs/SavedTab";
 import PlanningTab from "@/components/tabs/PlanningTab";
 import SummaryTab from "@/components/tabs/SummaryTab";
 import AddExpenseSheet from "@/components/AddExpenseSheet";
+import SettingsSheet from "@/components/SettingsSheet";
 
 type Tab = "records" | "saved" | "planning" | "summary";
 
 export default function AppShell({ session }: { session: Session }) {
   const userId = session.user.id;
+  const email = session.user.email ?? "";
   const [tab, setTab] = useState<Tab>("records");
   const [categories, setCategories] = useState<Category[]>([]);
   const [addOpen, setAddOpen] = useState(false);
   const [editing, setEditing] = useState<Expense | null>(null);
   const [preset, setPreset] = useState<string | null>(null);
   const [refresh, setRefresh] = useState(0);
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   const loadCats = useCallback(async () => {
     await ensureDefaultCategories(userId);
@@ -49,10 +52,11 @@ export default function AppShell({ session }: { session: Session }) {
           <div className="w-9 h-9 rounded-clay bg-nextp-icon grid place-items-center text-white font-black shadow-clay-sm">N</div>
           <span className="font-black text-nextp-blue text-xl">NextP</span>
         </div>
-        <div className="flex items-center gap-3">
-          <span className="w-9 h-9 rounded-full bg-white shadow-clay-sm grid place-items-center">🔔</span>
-          <button onClick={logout} className="text-nextp-muted text-sm font-bold">Sair</button>
-        </div>
+        <button onClick={() => setSettingsOpen(true)} aria-label="Configurações"
+          className="w-9 h-9 rounded-full bg-white shadow-clay-sm grid place-items-center">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/icons/system/system-settings.svg" width={22} height={22} alt="" draggable={false} />
+        </button>
       </header>
 
       <main className="flex-1 overflow-y-auto pb-28">
@@ -74,6 +78,10 @@ export default function AppShell({ session }: { session: Session }) {
           onClose={close}
           onSaved={afterSave}
         />
+      )}
+
+      {settingsOpen && (
+        <SettingsSheet userId={userId} email={email} onClose={() => setSettingsOpen(false)} onLogout={logout} />
       )}
     </div>
   );

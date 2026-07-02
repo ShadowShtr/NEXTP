@@ -1,6 +1,8 @@
 # 07 — Notificações
 
-Notificações úteis e **configuráveis**, agendadas com **WorkManager** (sobrevivem a reinício). Canal Android dedicado. Permissão `POST_NOTIFICATIONS` (Android 13+).
+Notificações úteis e **configuráveis**, agendadas com **WorkManager** (sobrevivem a reinício) na versão Android. Canal Android dedicado. Permissão `POST_NOTIFICATIONS` (Android 13+).
+
+> **Estado atual (web, TASK 18 de `docs/19`):** em **Configurações → Notificações** o utilizador pode pedir permissão do browser (`Notification.requestPermission`) e guardar a preferência de lembrete diário (ativo/hora) e o limite de "gasto pequeno" — tudo persistido em `user_settings`. **Limitação honesta:** notificações automáticas em segundo plano no iPhone exigem a PWA instalada no ecrã inicial **e** um servidor de push (Web Push com chaves VAPID), que ainda não existe neste projeto. Por agora a infraestrutura de preferências está pronta; o disparo automático fica como trabalho futuro quando houver um backend simples (ex. função agendada) para enviar os pushes.
 
 ## Tipos
 

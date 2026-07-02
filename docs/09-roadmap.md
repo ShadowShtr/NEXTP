@@ -12,9 +12,9 @@ Desenvolvimento **linear**, sem pular etapas. Cada fase termina com commit e atu
 - [x] **Fase 5 — Planeamento**: contas futuras, dívidas, compras desejadas, barras de progresso.
 - [x] **Fase 6 — Pagamentos recorrentes**: templates + ocorrências mensais, checklist com bolinhas (SVG master), mês independente. Doc `11`.
 - [x] **Fase 7 — Resumo e gráficos**: estatísticas, gráfico por categoria, evolução diária, Gastos Invisíveis.
-- [ ] **Fase 8 — Notificações**: lembretes, resumos, vencimentos, limites, garantias, config.
-- [ ] **Fase 9 — Backup**: exportação/importação JSON (o backup na nuvem já existe via Supabase; falta export manual).
-- [ ] **Fase 10 — Refinamento**: dashboard motivacional, histórico/detalhe de recorrente, ilustrações 3D completas, testes, polish visual final (ver TASK 20 em `docs/19`).
+- [x] **Fase 8 — Notificações (base)**: preferências guardadas (lembrete diário, hora, limite de gasto pequeno) + permissão do browser em Configurações. Disparo automático no iPhone precisa de Web Push com servidor — trabalho futuro (ver `07-notificacoes.md`).
+- [x] **Fase 9 — Backup**: exportar/importar JSON em Configurações (dados já vivem no Supabase; isto é cópia extra portátil).
+- [x] **Fase 10 — Refinamento (parcial)**: tabs de Planeamento por tipo, detalhe/histórico de conta recorrente, comparação mensal e recorrentes pagos x pendentes no Resumo, dashboard motivacional (sequência de dias + conquistas). Faltam: ilustrações 3D completas, testes automatizados.
 
 ## Entregável por etapa
 Para cada fase documentar: o que foi feito, arquivos criados/alterados, como testar, o que falta, riscos técnicos, atualização de docs, commit.

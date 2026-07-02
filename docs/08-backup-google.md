@@ -2,6 +2,8 @@
 
 Integração **opcional** — o app funciona 100% offline. Google serve para **login, backup e restauro** (ex.: trocar de telemóvel).
 
+> **Estado atual (web, TASK 19 de `docs/19`):** os dados já vivem permanentemente no Supabase (nuvem) — não há risco de perda ao limpar cache ou trocar de telemóvel. O que existe hoje é uma **exportação/importação manual em JSON**, acessível em **Configurações → Backup** (⚙️ no header): botão "Exportar backup" descarrega um `.json` com todas as tabelas do utilizador; botão "Restaurar" lê um `.json` e reinsere os dados na conta atual. Limitação conhecida: ao restaurar, relações entre tabelas (ex. `category_id` de um gasto antigo, `recurring_payment_id` de uma ocorrência) só se mantêm válidas se o registo relacionado ainda existir com o mesmo ID na conta de destino — caso contrário essa linha é ignorada (contada em "registos ignorados") sem falhar o resto da importação. Login Google/Drive descrito abaixo é trabalho futuro (Fase 9 completa).
+
 ## Login
 
 - **Credential Manager** + Google ID token (biblioteca `googleid`).
