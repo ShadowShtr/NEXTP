@@ -1,4 +1,4 @@
-/* NextP — ligação aos SVG masters do NextP Clay System (assets/icons/svg → public/icons). */
+/* NextP — ligação aos assets visuais do NextP Clay System. */
 import React from "react";
 
 const DIACRITICS_RE = new RegExp("[\\u0300-\\u036f]", "g");
@@ -8,29 +8,50 @@ function stripAccents(s: string): string {
   return s.normalize("NFD").replace(DIACRITICS_RE, "");
 }
 
-/** nome da categoria → ficheiro SVG em /public/icons/categories */
-export function categorySvg(name: string): string {
+type CatKey = "food" | "fun" | "market" | "fixed-bill" | "transport" | "home" | "work" | "family" | "health" | "documents" | "other";
+
+function categoryKey(name: string): CatKey {
   const n = stripAccents((name || "").toLowerCase());
-  let key = "other";
-  if (n.includes("comida")) key = "food";
-  else if (n.includes("besteira")) key = "fun";
-  else if (n.includes("mercado")) key = "market";
-  else if (n.includes("conta")) key = "fixed-bill";
-  else if (n.includes("transp")) key = "transport";
-  else if (n.includes("casa")) key = "home";
-  else if (n.includes("trabalho")) key = "work";
-  else if (n.includes("famil")) key = "family";
-  else if (n.includes("saude")) key = "health";
-  else if (n.includes("document")) key = "documents";
-  return `/icons/categories/category-${key}.svg`;
+  if (n.includes("comida")) return "food";
+  if (n.includes("besteira")) return "fun";
+  if (n.includes("mercado")) return "market";
+  if (n.includes("conta")) return "fixed-bill";
+  if (n.includes("transp")) return "transport";
+  if (n.includes("casa")) return "home";
+  if (n.includes("trabalho")) return "work";
+  if (n.includes("famil")) return "family";
+  if (n.includes("saude")) return "health";
+  if (n.includes("document")) return "documents";
+  return "other";
 }
 
-/** Ícone de categoria (telha clay premium). */
+/** Ícones 3D premium (pack oficial) — só existem para estas categorias; as restantes usam o SVG clay. */
+const PNG_ICONS: Partial<Record<CatKey, string>> = {
+  food: "/icons/categories-png/category-food-burger.png",
+  fun: "/icons/categories-png/category-fun-game-controller.png",
+  home: "/icons/categories-png/category-home-house.png",
+  transport: "/icons/categories-png/category-transport-bus.png",
+};
+
+/** nome da categoria → ficheiro SVG em /public/icons/categories (fallback quando não há PNG 3D). */
+export function categorySvg(name: string): string {
+  return `/icons/categories/category-${categoryKey(name)}.svg`;
+}
+
+/** Ícone de categoria: usa o PNG 3D oficial quando existe, senão a telha SVG clay. */
 export function CategoryIcon({ name, size = 48 }: { name: string; size?: number }) {
+  const key = categoryKey(name);
+  const png = PNG_ICONS[key];
   return (
     // eslint-disable-next-line @next/next/no-img-element
-    <img src={categorySvg(name)} width={size} height={size} alt={name}
-      className="drop-shadow-[0_6px_10px_rgba(0,109,255,0.18)]" draggable={false} />
+    <img
+      src={png ?? categorySvg(name)}
+      width={size}
+      height={size}
+      alt={name}
+      className={png ? "" : "drop-shadow-[0_6px_10px_rgba(0,109,255,0.18)]"}
+      draggable={false}
+    />
   );
 }
 

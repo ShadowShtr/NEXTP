@@ -52,14 +52,14 @@ export default function RecordsTab({ userId, categories, onEdit, onQuickAdd }: P
   return (
     <div className="px-5 py-2 space-y-4">
       {/* Card Hoje (azul) */}
-      <div className="clay-card bg-nextp-blue text-white flex items-center justify-between">
+      <div className="clay-card bg-nextp-blue text-white flex items-center justify-between overflow-hidden">
         <div>
           <p className="text-white/80 text-sm font-bold">Hoje</p>
           <p className="text-4xl font-black leading-tight">{eur(dayTotal)}</p>
           <p className="text-white/80 text-sm">{dayExpenses.length} {dayExpenses.length === 1 ? "gasto" : "gastos"}</p>
         </div>
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/illustrations/registos-mascot.png" alt="" width={92} height={92} className="shrink-0 -my-4" draggable={false} />
+        <img src="/illustrations/registos-mascot.png" alt="" width={84} height={84} className="shrink-0" draggable={false} />
       </div>
 
       {/* Card Este mês + orçamento */}

@@ -69,13 +69,13 @@ export default function SavedTab({ userId }: { userId: string }) {
       <h1 className="text-2xl font-black">Guardados</h1>
 
       {/* Header azul com total (muda conforme a tab) */}
-      <div className="clay-card bg-nextp-blue text-white flex items-center justify-between">
+      <div className="clay-card bg-nextp-blue text-white flex items-center justify-between overflow-hidden">
         <div>
           <p className="text-white/80 text-xs font-bold uppercase">{sub === "purchased" ? "Total guardado" : "Total previsto"}</p>
           <p className="text-3xl font-black">{eur(sub === "purchased" ? total : wishTotal)}</p>
         </div>
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/illustrations/guardados-wallet.png" alt="" width={80} height={80} className="shrink-0 -my-3" draggable={false} />
+        <img src="/illustrations/guardados-wallet.png" alt="" width={72} height={72} className="shrink-0" draggable={false} />
       </div>
 
       {/* Tabs pill */}
