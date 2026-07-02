@@ -22,25 +22,22 @@ export default function LoginScreen() {
     const sb = getSupabase();
 
     // 1) tenta entrar
-    let { data, error } = await sb.auth.signInWithPassword({ email, password });
+    const { error: signInErr } = await sb.auth.signInWithPassword({ email, password });
 
     // 2) se ainda não existe conta, cria e entra
-    if (error && /invalid login credentials/i.test(error.message)) {
-      const up = await sb.auth.signUp({ email, password });
-      if (up.error) {
+    if (signInErr) {
+      if (/invalid login credentials/i.test(signInErr.message)) {
+        const { data: up, error: signUpErr } = await sb.auth.signUp({ email, password });
         setLoading(false);
-        return setMsg(up.error.message);
+        if (signUpErr) return setMsg(signUpErr.message);
+        if (!up.session) return setMsg('Conta criada. Desliga "Confirm email" no Supabase e tenta entrar.');
+        return; // sessão criada — onAuthStateChange trata do resto
       }
-      if (!up.data.session) {
-        setLoading(false);
-        return setMsg('Conta criada. Desliga "Confirm email" no Supabase e tenta entrar.');
-      }
-      data = up.data;
-      error = null;
+      setLoading(false);
+      return setMsg(signInErr.message);
     }
 
     setLoading(false);
-    if (error) return setMsg(error.message);
     // onAuthStateChange trata do resto.
   }
 
