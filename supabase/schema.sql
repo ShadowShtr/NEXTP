@@ -20,6 +20,7 @@ create table if not exists public.categories (
   created_at    timestamptz not null default now()
 );
 
+
 -- ---------- EXPENSES ----------
 create table if not exists public.expenses (
   id             uuid primary key default gen_random_uuid(),
@@ -202,3 +203,52 @@ begin
     $f$, t);
   end loop;
 end $$;
+
+-- ============================================================
+-- CORREÇÃO: categorias duplicadas (bug de corrida no seed antigo).
+-- Mantém a categoria mais antiga de cada (user_id, name), reaponta tudo o que
+-- referenciava as duplicadas, apaga as duplicadas e impede que voltem a
+-- acontecer. Seguro correr sempre — não faz nada se já não houver duplicados.
+-- ============================================================
+do $$
+begin
+  with ranked as (
+    select id, user_id, name,
+           row_number() over (partition by user_id, name order by created_at asc, id asc) as rn,
+           first_value(id) over (partition by user_id, name order by created_at asc, id asc) as keep_id
+    from public.categories
+  ),
+  dups as (select id, keep_id from ranked where rn > 1)
+  update public.expenses e set category_id = d.keep_id
+    from dups d where e.category_id = d.id;
+
+  with ranked as (
+    select id, user_id, name,
+           row_number() over (partition by user_id, name order by created_at asc, id asc) as rn,
+           first_value(id) over (partition by user_id, name order by created_at asc, id asc) as keep_id
+    from public.categories
+  ),
+  dups as (select id, keep_id from ranked where rn > 1)
+  update public.recurring_payments rp set category_id = d.keep_id
+    from dups d where rp.category_id = d.id;
+
+  with ranked as (
+    select id, user_id, name,
+           row_number() over (partition by user_id, name order by created_at asc, id asc) as rn,
+           first_value(id) over (partition by user_id, name order by created_at asc, id asc) as keep_id
+    from public.categories
+  ),
+  dups as (select id, keep_id from ranked where rn > 1)
+  update public.wishlist_items w set category_id = d.keep_id
+    from dups d where w.category_id = d.id;
+
+  with ranked as (
+    select id, user_id, name,
+           row_number() over (partition by user_id, name order by created_at asc, id asc) as rn
+    from public.categories
+  )
+  delete from public.categories c using ranked r
+    where c.id = r.id and r.rn > 1;
+end $$;
+
+create unique index if not exists categories_user_name_uq on public.categories(user_id, name);

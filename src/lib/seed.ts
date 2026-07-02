@@ -14,7 +14,12 @@ const DEFAULTS = [
   { name: "Outros", icon: "📦", color: "#98A2B3" },
 ];
 
-/** Semeia categorias padrão na primeira utilização (idempotente). */
+/**
+ * Semeia categorias padrão na primeira utilização.
+ * Idempotente e seguro contra corridas: usa upsert com "ignoreDuplicates" sobre
+ * o índice único (user_id, name) — nunca cria duplicados mesmo que esta função
+ * seja chamada em paralelo (ex.: dois separadores abertos ao mesmo tempo).
+ */
 export async function ensureDefaultCategories(userId: string) {
   const sb = getSupabase();
   const { count } = await sb
@@ -24,5 +29,8 @@ export async function ensureDefaultCategories(userId: string) {
   if ((count ?? 0) > 0) return;
   await sb
     .from("categories")
-    .insert(DEFAULTS.map((c) => ({ ...c, is_default: true, user_id: userId })));
+    .upsert(
+      DEFAULTS.map((c) => ({ ...c, is_default: true, user_id: userId })),
+      { onConflict: "user_id,name", ignoreDuplicates: true }
+    );
 }

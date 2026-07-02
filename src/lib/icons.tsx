@@ -1,9 +1,16 @@
 /* NextP — ligação aos SVG masters do NextP Clay System (assets/icons/svg → public/icons). */
 import React from "react";
 
+const DIACRITICS_RE = new RegExp("[\\u0300-\\u036f]", "g");
+
+/** Remove acentos para o matching de nome não falhar com "Família", "Saúde", etc. */
+function stripAccents(s: string): string {
+  return s.normalize("NFD").replace(DIACRITICS_RE, "");
+}
+
 /** nome da categoria → ficheiro SVG em /public/icons/categories */
 export function categorySvg(name: string): string {
-  const n = (name || "").toLowerCase();
+  const n = stripAccents((name || "").toLowerCase());
   let key = "other";
   if (n.includes("comida")) key = "food";
   else if (n.includes("besteira")) key = "fun";
@@ -13,9 +20,8 @@ export function categorySvg(name: string): string {
   else if (n.includes("casa")) key = "home";
   else if (n.includes("trabalho")) key = "work";
   else if (n.includes("famil")) key = "family";
-  else if (n.includes("saúde") || n.includes("saude")) key = "health";
+  else if (n.includes("saude")) key = "health";
   else if (n.includes("document")) key = "documents";
-  // contas recorrentes comuns caem em ícones específicos de feature/fixed-bill
   return `/icons/categories/category-${key}.svg`;
 }
 
