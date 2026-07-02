@@ -1,0 +1,5 @@
+# Ficheiros que o Vercel deve ignorar (não fazem parte da web app)
+android/
+assets/
+tests/
+docs/
