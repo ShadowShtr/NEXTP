@@ -103,7 +103,11 @@ export default function SummaryTab({ userId }: { userId: string }) {
 
   return (
     <div className="px-5 py-3 space-y-4">
-      <h1 className="text-2xl font-black">Resumo</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-black">Resumo</h1>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/illustrations/resumo-wallet-growth.png" alt="" width={64} height={64} draggable={false} />
+      </div>
 
       <MotivationalCard streak={streak} monthOnTrack={recurringStats.total > 0 && recurringStats.pending === 0} hasExpenses={stats.count > 0} />
 

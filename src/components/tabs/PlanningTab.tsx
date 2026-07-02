@@ -18,6 +18,25 @@ const PLAN_TABS: [string, string][] = [
   ["FUTURE_BILL", "Contas"], ["DEBT", "Dívidas"], ["WISH", "Compras"], ["GOAL", "Objetivos"],
 ];
 
+/** Agrupa itens por "Este mês / Próximo mês / Mais tarde / Sem data" e soma cada grupo. */
+function groupByMonth(items: PlanningItem[]) {
+  const today = new Date();
+  const curKey = `${today.getFullYear()}-${today.getMonth()}`;
+  const next = new Date(today.getFullYear(), today.getMonth() + 1, 1);
+  const nextKey = `${next.getFullYear()}-${next.getMonth()}`;
+
+  const groups = { thisMonth: 0, nextMonth: 0, later: 0, noDate: 0 };
+  for (const it of items) {
+    if (!it.due_date) { groups.noDate += Number(it.total_amount); continue; }
+    const d = new Date(it.due_date);
+    const key = `${d.getFullYear()}-${d.getMonth()}`;
+    if (key === curKey) groups.thisMonth += Number(it.total_amount);
+    else if (key === nextKey) groups.nextMonth += Number(it.total_amount);
+    else groups.later += Number(it.total_amount);
+  }
+  return groups;
+}
+
 export default function PlanningTab({ userId }: { userId: string }) {
   const now = new Date();
   const [year, setYear] = useState(now.getFullYear());
@@ -29,6 +48,8 @@ export default function PlanningTab({ userId }: { userId: string }) {
   const [loading, setLoading] = useState(true);
   const [openRec, setOpenRec] = useState(false);
   const [openPlan, setOpenPlan] = useState(false);
+  const [editingPlan, setEditingPlan] = useState<PlanningItem | null>(null);
+  const [editingRecurring, setEditingRecurring] = useState<RecurringPayment | null>(null);
   const [detail, setDetail] = useState<{ payment: RecurringPayment; occ: Occurrence } | null>(null);
 
   const load = useCallback(async () => {
@@ -65,6 +86,8 @@ export default function PlanningTab({ userId }: { userId: string }) {
   }, [occ]);
 
   const itemsForTab = useMemo(() => items.filter((it) => it.type === planTab), [items, planTab]);
+  const tabTotal = useMemo(() => itemsForTab.reduce((s, it) => s + Number(it.total_amount), 0), [itemsForTab]);
+  const monthGroups = useMemo(() => groupByMonth(itemsForTab), [itemsForTab]);
 
   function shiftMonth(delta: number) {
     let m = month + delta, y = year;
@@ -82,7 +105,11 @@ export default function PlanningTab({ userId }: { userId: string }) {
 
   return (
     <div className="px-5 py-3 space-y-4">
-      <h1 className="text-2xl font-black">Planeamento</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-black">Planeamento</h1>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/illustrations/planeamento-piggybank.png" alt="" width={64} height={64} draggable={false} />
+      </div>
 
       {/* Seletor de mês */}
       <div className="clay-card flex items-center justify-between">
@@ -91,7 +118,7 @@ export default function PlanningTab({ userId }: { userId: string }) {
         <button onClick={() => shiftMonth(1)} className="text-nextp-blue text-2xl font-black px-2">›</button>
       </div>
 
-      {/* Totais do mês */}
+      {/* Totais do mês (recorrentes) */}
       <div className="grid grid-cols-3 gap-2">
         <div className="clay-card-soft text-center py-3">
           <p className="text-[10px] text-nextp-muted font-bold uppercase">Total</p>
@@ -125,7 +152,7 @@ export default function PlanningTab({ userId }: { userId: string }) {
                   <div className="w-11 h-11 shrink-0"><CategoryIcon name={p.name} size={44} /></div>
                   <div className="flex-1 min-w-0">
                     <p className="font-bold truncate">{p.name}</p>
-                    <p className="text-nextp-muted text-xs">{eur(Number(p.amount))} · vence {prettyDate(o.due_date)}</p>
+                    <p className="text-nextp-muted text-xs">{eur(Number(p.amount))} · vence dia {p.due_day}</p>
                   </div>
                 </button>
                 <button onClick={() => onQuickToggle(o)} aria-label={o.status === "PAID" ? "marcar pendente" : "marcar pago"}
@@ -151,13 +178,29 @@ export default function PlanningTab({ userId }: { userId: string }) {
           ))}
         </div>
 
+        {/* Soma total + por mês (previsto para gastar) */}
+        {itemsForTab.length > 0 && (
+          <div className="clay-card-soft space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-bold">Total previsto</span>
+              <span className="font-black">{eur(tabTotal)}</span>
+            </div>
+            <div className="grid grid-cols-2 gap-2 text-xs">
+              {monthGroups.thisMonth > 0 && <MonthPill label="Este mês" value={monthGroups.thisMonth} />}
+              {monthGroups.nextMonth > 0 && <MonthPill label="Próximo mês" value={monthGroups.nextMonth} />}
+              {monthGroups.later > 0 && <MonthPill label="Mais tarde" value={monthGroups.later} />}
+              {monthGroups.noDate > 0 && <MonthPill label="Sem data" value={monthGroups.noDate} />}
+            </div>
+          </div>
+        )}
+
         {itemsForTab.length === 0 ? (
           <div className="clay-card text-center text-nextp-muted py-8">Sem itens nesta categoria.</div>
         ) : (
           itemsForTab.map((it) => {
             const pct = it.total_amount > 0 ? Math.min(100, Math.round((it.paid_amount / it.total_amount) * 100)) : 0;
             return (
-              <div key={it.id} className="clay-card space-y-2">
+              <button key={it.id} onClick={() => setEditingPlan(it)} className="clay-card w-full text-left space-y-2 block">
                 <div className="flex items-center justify-between">
                   <p className="font-bold">{it.name}</p>
                   <p className="font-black">{eur(Number(it.total_amount))}</p>
@@ -169,16 +212,25 @@ export default function PlanningTab({ userId }: { userId: string }) {
                 <div className="h-2 rounded-full bg-nextp-cardsoft overflow-hidden">
                   <div className="h-full bg-nextp-blue" style={{ width: `${pct}%` }} />
                 </div>
-              </div>
+              </button>
             );
           })
         )}
         <button onClick={() => setOpenPlan(true)} className="clay-btn-ghost w-full">+ Nova conta ou dívida</button>
       </div>
 
-      {openRec && <RecurringSheet userId={userId} onClose={() => setOpenRec(false)} onSaved={() => { setOpenRec(false); load(); }} />}
-      {openPlan && (
-        <PlanSheet userId={userId} defaultType={planTab} onClose={() => setOpenPlan(false)} onSaved={() => { setOpenPlan(false); load(); }} />
+      {openRec && <RecurringSheet userId={userId} editing={null} onClose={() => setOpenRec(false)} onSaved={() => { setOpenRec(false); load(); }} />}
+      {editingRecurring && (
+        <RecurringSheet userId={userId} editing={editingRecurring} onClose={() => setEditingRecurring(null)} onSaved={() => { setEditingRecurring(null); load(); }} />
+      )}
+      {(openPlan || editingPlan) && (
+        <PlanSheet
+          userId={userId}
+          defaultType={planTab}
+          editing={editingPlan}
+          onClose={() => { setOpenPlan(false); setEditingPlan(null); }}
+          onSaved={() => { setOpenPlan(false); setEditingPlan(null); load(); }}
+        />
       )}
       {detail && (
         <RecurringDetailSheet
@@ -187,16 +239,27 @@ export default function PlanningTab({ userId }: { userId: string }) {
           occurrence={detail.occ}
           onClose={() => setDetail(null)}
           onChanged={load}
+          onEdit={(p) => { setDetail(null); setEditingRecurring(p); }}
         />
       )}
     </div>
   );
 }
 
-function RecurringSheet({ userId, onClose, onSaved }: { userId: string; onClose: () => void; onSaved: () => void }) {
-  const [name, setName] = useState("");
-  const [amount, setAmount] = useState("");
-  const [day, setDay] = useState("1");
+function MonthPill({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="bg-white rounded-clay px-2.5 py-1.5 flex items-center justify-between">
+      <span className="text-nextp-muted font-bold">{label}</span>
+      <span className="font-black">{eur(value)}</span>
+    </div>
+  );
+}
+
+function RecurringSheet({ userId, editing, onClose, onSaved }: { userId: string; editing: RecurringPayment | null; onClose: () => void; onSaved: () => void }) {
+  const isEdit = !!editing;
+  const [name, setName] = useState(editing?.name ?? "");
+  const [amount, setAmount] = useState(editing ? String(editing.amount).replace(".", ",") : "");
+  const [day, setDay] = useState(editing ? String(editing.due_day) : "1");
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
@@ -207,52 +270,82 @@ function RecurringSheet({ userId, onClose, onSaved }: { userId: string; onClose:
     if (!value || value <= 0) return setErr("Valor inválido.");
     if (!d || d < 1 || d > 31) return setErr("Dia entre 1 e 31.");
     setSaving(true);
-    const { error } = await getSupabase().from("recurring_payments").insert({
-      user_id: userId, name: name.trim(), amount: value, due_day: d,
-      repeat_type: "MONTHLY", start_date: new Date().toISOString().slice(0, 10), is_active: true,
-    });
+    const payload = { name: name.trim(), amount: value, due_day: d, updated_at: new Date().toISOString() };
+    const { error } = isEdit
+      ? await getSupabase().from("recurring_payments").update(payload).eq("id", editing!.id)
+      : await getSupabase().from("recurring_payments").insert({
+          ...payload, user_id: userId, repeat_type: "MONTHLY", start_date: new Date().toISOString().slice(0, 10), is_active: true,
+        });
+    setSaving(false);
+    if (error) return setErr(error.message);
+    onSaved();
+  }
+
+  async function deactivate() {
+    if (!editing || !confirm("Remover esta conta recorrente? O histórico de meses anteriores fica guardado.")) return;
+    setSaving(true);
+    const { error } = await getSupabase().from("recurring_payments").update({ is_active: false }).eq("id", editing.id);
     setSaving(false);
     if (error) return setErr(error.message);
     onSaved();
   }
 
   return (
-    <SheetShell title="Nova conta recorrente" onClose={onClose}>
+    <SheetShell title={isEdit ? "Editar conta recorrente" : "Nova conta recorrente"} onClose={onClose}>
       <input className="clay-input" placeholder="Nome (ex.: Internet, Netflix)" value={name} onChange={(e) => setName(e.target.value)} autoFocus />
       <div className="grid grid-cols-2 gap-3">
         <input className="clay-input" inputMode="decimal" placeholder="Valor (€)" value={amount} onChange={(e) => setAmount(e.target.value)} />
         <input className="clay-input" inputMode="numeric" placeholder="Dia venc. (1-31)" value={day} onChange={(e) => setDay(e.target.value)} />
       </div>
       {err && <p className="text-nextp-danger text-sm text-center">{err}</p>}
-      <button className="clay-btn w-full text-lg" onClick={save} disabled={saving}>{saving ? "A guardar…" : "Guardar conta"}</button>
+      <button className="clay-btn w-full text-lg" onClick={save} disabled={saving}>{saving ? "A guardar…" : isEdit ? "Guardar alterações" : "Guardar conta"}</button>
+      {isEdit && <button className="w-full text-nextp-danger font-bold py-2" onClick={deactivate} disabled={saving}>Remover conta recorrente</button>}
     </SheetShell>
   );
 }
 
-function PlanSheet({ userId, defaultType, onClose, onSaved }: { userId: string; defaultType: string; onClose: () => void; onSaved: () => void }) {
-  const [name, setName] = useState("");
-  const [amount, setAmount] = useState("");
-  const [type, setType] = useState(defaultType);
-  const [due, setDue] = useState("");
+function PlanSheet({ userId, defaultType, editing, onClose, onSaved }: {
+  userId: string; defaultType: string; editing: PlanningItem | null; onClose: () => void; onSaved: () => void;
+}) {
+  const isEdit = !!editing;
+  const [name, setName] = useState(editing?.name ?? "");
+  const [amount, setAmount] = useState(editing ? String(editing.total_amount).replace(".", ",") : "");
+  const [paidAmount, setPaidAmount] = useState(editing ? String(editing.paid_amount).replace(".", ",") : "0");
+  const [type, setType] = useState(editing?.type ?? defaultType);
+  const [due, setDue] = useState(editing?.due_date ?? "");
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
   async function save() {
     const value = parseFloat(amount.replace(",", "."));
+    const paid = parseFloat((paidAmount || "0").replace(",", "."));
     if (!name.trim()) return setErr("Nome em falta.");
     if (!value || value <= 0) return setErr("Valor inválido.");
     setSaving(true);
-    const { error } = await getSupabase().from("planning_items").insert({
-      user_id: userId, name: name.trim(), type, total_amount: value, paid_amount: 0,
-      due_date: due || null, status: "PENDING",
-    });
+    const status = paid <= 0 ? "PENDING" : paid >= value ? "PAID" : "PARTIAL";
+    const payload = {
+      name: name.trim(), type, total_amount: value, paid_amount: isNaN(paid) ? 0 : paid,
+      due_date: due || null, status, updated_at: new Date().toISOString(),
+    };
+    const { error } = isEdit
+      ? await getSupabase().from("planning_items").update(payload).eq("id", editing!.id)
+      : await getSupabase().from("planning_items").insert({ ...payload, user_id: userId });
+    setSaving(false);
+    if (error) return setErr(error.message);
+    onSaved();
+  }
+
+  async function remove() {
+    if (!editing || !confirm("Apagar este item?")) return;
+    setSaving(true);
+    const { error } = await getSupabase().from("planning_items").delete().eq("id", editing.id);
     setSaving(false);
     if (error) return setErr(error.message);
     onSaved();
   }
 
   return (
-    <SheetShell title="Nova conta / dívida / compra" onClose={onClose}>
+    <SheetShell title={isEdit ? "Editar item" : "Nova conta / dívida / compra"} onClose={onClose}>
       <input className="clay-input" placeholder="Nome" value={name} onChange={(e) => setName(e.target.value)} autoFocus />
       <div className="flex gap-2 overflow-x-auto pb-1">
         {PLAN_TABS.map(([v, l]) => (
@@ -261,11 +354,24 @@ function PlanSheet({ userId, defaultType, onClose, onSaved }: { userId: string; 
         ))}
       </div>
       <div className="grid grid-cols-2 gap-3">
-        <input className="clay-input" inputMode="decimal" placeholder="Valor (€)" value={amount} onChange={(e) => setAmount(e.target.value)} />
-        <input type="date" className="clay-input" value={due} onChange={(e) => setDue(e.target.value)} />
+        <div>
+          <p className="text-nextp-muted text-xs font-bold uppercase mb-1">Valor total</p>
+          <input className="clay-input" inputMode="decimal" placeholder="€" value={amount} onChange={(e) => setAmount(e.target.value)} />
+        </div>
+        <div>
+          <p className="text-nextp-muted text-xs font-bold uppercase mb-1">Data</p>
+          <input type="date" className="clay-input" value={due} onChange={(e) => setDue(e.target.value)} />
+        </div>
       </div>
+      {isEdit && (
+        <div>
+          <p className="text-nextp-muted text-xs font-bold uppercase mb-1">Valor já pago</p>
+          <input className="clay-input" inputMode="decimal" placeholder="€" value={paidAmount} onChange={(e) => setPaidAmount(e.target.value)} />
+        </div>
+      )}
       {err && <p className="text-nextp-danger text-sm text-center">{err}</p>}
-      <button className="clay-btn w-full text-lg" onClick={save} disabled={saving}>{saving ? "A guardar…" : "Guardar"}</button>
+      <button className="clay-btn w-full text-lg" onClick={save} disabled={saving}>{saving ? "A guardar…" : isEdit ? "Guardar alterações" : "Guardar"}</button>
+      {isEdit && <button className="w-full text-nextp-danger font-bold py-2" onClick={remove} disabled={saving}>Apagar item</button>}
     </SheetShell>
   );
 }
@@ -274,7 +380,7 @@ function SheetShell({ title, onClose, children }: { title: string; onClose: () =
   return (
     <div className="fixed inset-0 z-30 flex items-end justify-center">
       <div className="absolute inset-0 bg-black/30" onClick={onClose} />
-      <div className="relative w-full max-w-md bg-white rounded-t-clay-xl shadow-clay p-5 space-y-3">
+      <div className="relative w-full max-w-md bg-white rounded-t-clay-xl shadow-clay p-5 space-y-3 max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between">
           <h2 className="text-xl font-black">{title}</h2>
           <button onClick={onClose} className="text-nextp-muted font-bold">Fechar</button>

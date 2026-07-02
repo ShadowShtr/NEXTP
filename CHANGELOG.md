@@ -13,6 +13,9 @@ Todas as mudanças relevantes do NextP. Formato baseado em [Keep a Changelog](ht
 - **Resumo**: comparação com o mês anterior, recorrentes pagos x pendentes do mês, dashboard motivacional (sequência de dias registando gastos + conquistas: primeiro gasto, 7 dias seguidos, mês no azul).
 - **Configurações** (novo, ícone ⚙️ no header): exportar/importar backup em JSON, preferências de notificação (com permissão do browser), limite de gasto pequeno, sair da conta.
 - **Métricas locais**: `metric_events` (Supabase, RLS) regista eventos de uso sem dados sensíveis, usado no dashboard motivacional.
+- **Ilustrações 3D oficiais**: mascote (Registos), carteira (Guardados), cofrinho (Planeamento), gráfico (Resumo) e ícone final do app, a partir do pack `nextp_all_png_3d_assets` (otimizados para web, `public/illustrations/`).
+- **Edição completa**: itens Guardados, produtos da Wishlist, itens de Planeamento (Contas/Dívidas/Compras/Objetivos, incluindo data de vencimento e valor pago) e contas recorrentes (nome/valor/**dia de vencimento**) agora são todos editáveis ao tocar no registo — com opção de apagar.
+- **Planeamento → soma por mês**: cada tab (Contas/Dívidas/Compras/Objetivos) mostra o total previsto e a divisão por "Este mês / Próximo mês / Mais tarde / Sem data".
 
 - **Fase 1 — Base do projeto**
   - Estrutura de pastas, `.gitignore`, README e documentação inicial (`docs/`).

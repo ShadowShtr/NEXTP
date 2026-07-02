@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { getSupabase } from "@/lib/supabase";
 import { eur, prettyDate, todayISO } from "@/lib/format";
-import { FeatureIcon } from "@/lib/icons";
 import { convertWishlistToSavedItem, isAmazonUrl, isValidUrl, type WishlistItem, type WishlistPriority } from "@/lib/wishlist";
 import { logMetric } from "@/lib/metrics";
 
@@ -28,6 +27,8 @@ export default function SavedTab({ userId }: { userId: string }) {
   const [openPurchased, setOpenPurchased] = useState(false);
   const [openWish, setOpenWish] = useState(false);
   const [converting, setConverting] = useState<WishlistItem | null>(null);
+  const [editingSaved, setEditingSaved] = useState<SavedItem | null>(null);
+  const [editingWish, setEditingWish] = useState<WishlistItem | null>(null);
 
   const load = useCallback(async () => {
     const sb = getSupabase();
@@ -73,7 +74,8 @@ export default function SavedTab({ userId }: { userId: string }) {
           <p className="text-white/80 text-xs font-bold uppercase">{sub === "purchased" ? "Total guardado" : "Total previsto"}</p>
           <p className="text-3xl font-black">{eur(sub === "purchased" ? total : wishTotal)}</p>
         </div>
-        <FeatureIcon name={sub === "purchased" ? "wallet" : "piggy-bank"} size={64} />
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/illustrations/guardados-wallet.png" alt="" width={80} height={80} className="shrink-0 -my-3" draggable={false} />
       </div>
 
       {/* Tabs pill */}
@@ -97,22 +99,24 @@ export default function SavedTab({ userId }: { userId: string }) {
           <div className="space-y-2">
             {items.map((it) => (
               <div key={it.id} className="clay-card flex items-center gap-3">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="/icons/saved/saved-purchased.svg" width={48} height={48} alt="" className="shrink-0" draggable={false} />
-                <div className="flex-1 min-w-0">
-                  <p className="font-bold truncate">{it.name}</p>
-                  <p className="text-nextp-muted text-xs">
-                    {prettyDate(it.purchase_date)}{it.store ? ` · ${it.store}` : ""}
-                  </p>
-                  <div className="mt-1 flex items-center gap-2 flex-wrap">
-                    {warrantyBadge(it.warranty_until)}
-                    {it.purchase_url && (
-                      <a href={it.purchase_url} target="_blank" rel="noopener noreferrer" className="text-nextp-blue text-xs font-bold underline">
-                        Ver compra
-                      </a>
-                    )}
+                <button onClick={() => setEditingSaved(it)} className="flex items-center gap-3 flex-1 min-w-0 text-left">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src="/icons/saved/saved-purchased.svg" width={48} height={48} alt="" className="shrink-0" draggable={false} />
+                  <div className="flex-1 min-w-0">
+                    <p className="font-bold truncate">{it.name}</p>
+                    <p className="text-nextp-muted text-xs">
+                      {prettyDate(it.purchase_date)}{it.store ? ` · ${it.store}` : ""}
+                    </p>
+                    <div className="mt-1 flex items-center gap-2 flex-wrap">
+                      {warrantyBadge(it.warranty_until)}
+                      {it.purchase_url && (
+                        <a href={it.purchase_url} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="text-nextp-blue text-xs font-bold underline">
+                          Ver compra
+                        </a>
+                      )}
+                    </div>
                   </div>
-                </div>
+                </button>
                 <div className="text-right shrink-0">
                   <p className="font-black">{eur(Number(it.amount))}</p>
                   <button onClick={() => removeItem(it.id)} className="text-nextp-danger text-xs font-bold">apagar</button>
@@ -127,7 +131,7 @@ export default function SavedTab({ userId }: { userId: string }) {
         <div className="space-y-2">
           {wishOpen.map((w) => (
             <div key={w.id} className="clay-card space-y-2">
-              <div className="flex items-center gap-3">
+              <button onClick={() => setEditingWish(w)} className="flex items-center gap-3 w-full text-left">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src="/icons/saved/saved-wishlist.svg" width={48} height={48} alt="" className="shrink-0" draggable={false} />
                 <div className="flex-1 min-w-0">
@@ -137,7 +141,7 @@ export default function SavedTab({ userId }: { userId: string }) {
                   </p>
                 </div>
                 <p className="font-black shrink-0">{eur(Number(w.expected_amount ?? w.target_amount ?? 0))}</p>
-              </div>
+              </button>
               <div className="flex gap-2">
                 {(w.amazon_url || w.external_url) && (
                   <a href={w.amazon_url || w.external_url!} target="_blank" rel="noopener noreferrer"
@@ -163,8 +167,22 @@ export default function SavedTab({ userId }: { userId: string }) {
         aria-label={sub === "purchased" ? "Novo item guardado" : "Novo produto desejado"}
       >＋</button>
 
-      {openPurchased && <SavedSheet userId={userId} onClose={() => setOpenPurchased(false)} onSaved={() => { setOpenPurchased(false); load(); }} />}
-      {openWish && <WishlistSheet userId={userId} onClose={() => setOpenWish(false)} onSaved={() => { setOpenWish(false); load(); }} />}
+      {(openPurchased || editingSaved) && (
+        <SavedSheet
+          userId={userId}
+          editing={editingSaved}
+          onClose={() => { setOpenPurchased(false); setEditingSaved(null); }}
+          onSaved={() => { setOpenPurchased(false); setEditingSaved(null); load(); }}
+        />
+      )}
+      {(openWish || editingWish) && (
+        <WishlistSheet
+          userId={userId}
+          editing={editingWish}
+          onClose={() => { setOpenWish(false); setEditingWish(null); }}
+          onSaved={() => { setOpenWish(false); setEditingWish(null); load(); }}
+        />
+      )}
       {converting && (
         <ConvertSheet
           userId={userId}
@@ -181,14 +199,15 @@ function priorityLabel(p: WishlistPriority) {
   return { LOW: "Baixa", MEDIUM: "Média", HIGH: "Alta", URGENT: "Urgente" }[p] ?? p;
 }
 
-function SavedSheet({ userId, onClose, onSaved }: { userId: string; onClose: () => void; onSaved: () => void }) {
-  const [name, setName] = useState("");
-  const [amount, setAmount] = useState("");
-  const [store, setStore] = useState("");
-  const [url, setUrl] = useState("");
-  const [date, setDate] = useState(todayISO());
-  const [warranty, setWarranty] = useState("");
-  const [countMonth, setCountMonth] = useState(false);
+function SavedSheet({ userId, editing, onClose, onSaved }: { userId: string; editing: SavedItem | null; onClose: () => void; onSaved: () => void }) {
+  const isEdit = !!editing;
+  const [name, setName] = useState(editing?.name ?? "");
+  const [amount, setAmount] = useState(editing ? String(editing.amount).replace(".", ",") : "");
+  const [store, setStore] = useState(editing?.store ?? "");
+  const [url, setUrl] = useState(editing?.purchase_url ?? "");
+  const [date, setDate] = useState(editing?.purchase_date ?? todayISO());
+  const [warranty, setWarranty] = useState(editing?.warranty_until ?? "");
+  const [countMonth, setCountMonth] = useState(editing?.count_as_monthly_expense ?? false);
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
@@ -198,11 +217,20 @@ function SavedSheet({ userId, onClose, onSaved }: { userId: string; onClose: () 
     if (!value || value <= 0) return setErr("Valor inválido.");
     if (!isValidUrl(url)) return setErr("Link inválido.");
     setSaving(true);
-    const { data, error } = await getSupabase().from("saved_items").insert({
-      user_id: userId, name: name.trim(), amount: value, purchase_date: date,
+    const payload = {
+      name: name.trim(), amount: value, purchase_date: date,
       store: store.trim() || null, warranty_until: warranty || null,
-      purchase_url: url.trim() || null, source: "MANUAL",
-      count_as_monthly_expense: countMonth,
+      purchase_url: url.trim() || null, count_as_monthly_expense: countMonth,
+      updated_at: new Date().toISOString(),
+    };
+    if (isEdit) {
+      const { error } = await getSupabase().from("saved_items").update(payload).eq("id", editing!.id);
+      setSaving(false);
+      if (error) return setErr(error.message);
+      return onSaved();
+    }
+    const { data, error } = await getSupabase().from("saved_items").insert({
+      ...payload, user_id: userId, source: "MANUAL",
     }).select("id").single();
     if (!error && countMonth && data) {
       await getSupabase().from("expenses").insert({
@@ -217,8 +245,17 @@ function SavedSheet({ userId, onClose, onSaved }: { userId: string; onClose: () 
     onSaved();
   }
 
+  async function remove() {
+    if (!editing || !confirm("Apagar este item?")) return;
+    setSaving(true);
+    const { error } = await getSupabase().from("saved_items").delete().eq("id", editing.id);
+    setSaving(false);
+    if (error) return setErr(error.message);
+    onSaved();
+  }
+
   return (
-    <SheetShell title="Novo item guardado" onClose={onClose}>
+    <SheetShell title={isEdit ? "Editar item guardado" : "Novo item guardado"} onClose={onClose}>
       <input className="clay-input" placeholder="Nome (ex.: Air Fryer)" value={name} onChange={(e) => setName(e.target.value)} autoFocus />
       <input className="clay-input" inputMode="decimal" placeholder="Valor (€)" value={amount} onChange={(e) => setAmount(e.target.value)} />
       <input className="clay-input" placeholder="Loja (opcional)" value={store} onChange={(e) => setStore(e.target.value)} />
@@ -230,7 +267,7 @@ function SavedSheet({ userId, onClose, onSaved }: { userId: string; onClose: () 
         </div>
         <div>
           <p className="text-nextp-muted text-xs font-bold uppercase mb-1">Garantia até</p>
-          <input type="date" className="clay-input" value={warranty} onChange={(e) => setWarranty(e.target.value)} />
+          <input type="date" className="clay-input" value={warranty ?? ""} onChange={(e) => setWarranty(e.target.value)} />
         </div>
       </div>
       <label className="flex items-center gap-3 clay-card-soft cursor-pointer">
@@ -238,20 +275,22 @@ function SavedSheet({ userId, onClose, onSaved }: { userId: string; onClose: () 
         <span className="text-sm font-bold">Contar como gasto do mês?</span>
       </label>
       {err && <p className="text-nextp-danger text-sm text-center">{err}</p>}
-      <button className="clay-btn w-full text-lg" onClick={save} disabled={saving}>{saving ? "A guardar…" : "Guardar item"}</button>
+      <button className="clay-btn w-full text-lg" onClick={save} disabled={saving}>{saving ? "A guardar…" : isEdit ? "Guardar alterações" : "Guardar item"}</button>
+      {isEdit && <button className="w-full text-nextp-danger font-bold py-2" onClick={remove} disabled={saving}>Apagar item</button>}
     </SheetShell>
   );
 }
 
-function WishlistSheet({ userId, onClose, onSaved }: { userId: string; onClose: () => void; onSaved: () => void }) {
-  const [name, setName] = useState("");
-  const [expected, setExpected] = useState("");
-  const [target, setTarget] = useState("");
-  const [amazonUrl, setAmazonUrl] = useState("");
-  const [externalUrl, setExternalUrl] = useState("");
-  const [priority, setPriority] = useState<WishlistPriority>("MEDIUM");
-  const [desired, setDesired] = useState("");
-  const [note, setNote] = useState("");
+function WishlistSheet({ userId, editing, onClose, onSaved }: { userId: string; editing: WishlistItem | null; onClose: () => void; onSaved: () => void }) {
+  const isEdit = !!editing;
+  const [name, setName] = useState(editing?.name ?? "");
+  const [expected, setExpected] = useState(editing?.expected_amount != null ? String(editing.expected_amount).replace(".", ",") : "");
+  const [target, setTarget] = useState(editing?.target_amount != null ? String(editing.target_amount).replace(".", ",") : "");
+  const [amazonUrl, setAmazonUrl] = useState(editing?.amazon_url ?? "");
+  const [externalUrl, setExternalUrl] = useState(editing?.external_url ?? "");
+  const [priority, setPriority] = useState<WishlistPriority>(editing?.priority ?? "MEDIUM");
+  const [desired, setDesired] = useState(editing?.desired_date ?? "");
+  const [note, setNote] = useState(editing?.note ?? "");
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const PR: [WishlistPriority, string][] = [["LOW", "Baixa"], ["MEDIUM", "Média"], ["HIGH", "Alta"], ["URGENT", "Urgente"]];
@@ -261,30 +300,42 @@ function WishlistSheet({ userId, onClose, onSaved }: { userId: string; onClose: 
     if (!isValidUrl(amazonUrl)) return setErr("Link Amazon inválido.");
     if (!isValidUrl(externalUrl)) return setErr("Link externo inválido.");
     setSaving(true);
-    const { error } = await getSupabase().from("wishlist_items").insert({
-      user_id: userId, name: name.trim(),
+    const payload = {
+      name: name.trim(),
       expected_amount: expected ? parseFloat(expected.replace(",", ".")) : null,
       target_amount: target ? parseFloat(target.replace(",", ".")) : null,
       amazon_url: amazonUrl.trim() || null,
       external_url: externalUrl.trim() || null,
       priority, desired_date: desired || null, note: note.trim() || null,
-      status: "WISHLIST",
-    });
+      updated_at: new Date().toISOString(),
+    };
+    const { error } = isEdit
+      ? await getSupabase().from("wishlist_items").update(payload).eq("id", editing!.id)
+      : await getSupabase().from("wishlist_items").insert({ ...payload, user_id: userId, status: "WISHLIST" });
     setSaving(false);
     if (error) return setErr(error.message);
-    logMetric(userId, "WISHLIST_ITEM_CREATED");
+    if (!isEdit) logMetric(userId, "WISHLIST_ITEM_CREATED");
+    onSaved();
+  }
+
+  async function remove() {
+    if (!editing || !confirm("Apagar este produto?")) return;
+    setSaving(true);
+    const { error } = await getSupabase().from("wishlist_items").delete().eq("id", editing.id);
+    setSaving(false);
+    if (error) return setErr(error.message);
     onSaved();
   }
 
   return (
-    <SheetShell title="Novo produto desejado" onClose={onClose}>
+    <SheetShell title={isEdit ? "Editar produto desejado" : "Novo produto desejado"} onClose={onClose}>
       <input className="clay-input" placeholder="Nome (ex.: Air Fryer nova)" value={name} onChange={(e) => setName(e.target.value)} autoFocus />
       <div className="grid grid-cols-2 gap-3">
         <input className="clay-input" inputMode="decimal" placeholder="Valor previsto (€)" value={expected} onChange={(e) => setExpected(e.target.value)} />
         <input className="clay-input" inputMode="decimal" placeholder="Preço alvo (€)" value={target} onChange={(e) => setTarget(e.target.value)} />
       </div>
-      <input className="clay-input" placeholder="Link Amazon (opcional)" value={amazonUrl} onChange={(e) => setAmazonUrl(e.target.value)} />
-      <input className="clay-input" placeholder="Link externo (opcional)" value={externalUrl} onChange={(e) => setExternalUrl(e.target.value)} />
+      <input className="clay-input" placeholder="Link Amazon (opcional)" value={amazonUrl ?? ""} onChange={(e) => setAmazonUrl(e.target.value)} />
+      <input className="clay-input" placeholder="Link externo (opcional)" value={externalUrl ?? ""} onChange={(e) => setExternalUrl(e.target.value)} />
       <div>
         <p className="text-nextp-muted text-xs font-bold uppercase mb-1">Prioridade</p>
         <div className="flex gap-2">
@@ -296,11 +347,12 @@ function WishlistSheet({ userId, onClose, onSaved }: { userId: string; onClose: 
       </div>
       <div>
         <p className="text-nextp-muted text-xs font-bold uppercase mb-1">Data desejada</p>
-        <input type="date" className="clay-input" value={desired} onChange={(e) => setDesired(e.target.value)} />
+        <input type="date" className="clay-input" value={desired ?? ""} onChange={(e) => setDesired(e.target.value)} />
       </div>
-      <input className="clay-input" placeholder="Observação (opcional)" value={note} onChange={(e) => setNote(e.target.value)} />
+      <input className="clay-input" placeholder="Observação (opcional)" value={note ?? ""} onChange={(e) => setNote(e.target.value)} />
       {err && <p className="text-nextp-danger text-sm text-center">{err}</p>}
-      <button className="clay-btn w-full text-lg" onClick={save} disabled={saving}>{saving ? "A guardar…" : "Guardar produto"}</button>
+      <button className="clay-btn w-full text-lg" onClick={save} disabled={saving}>{saving ? "A guardar…" : isEdit ? "Guardar alterações" : "Guardar produto"}</button>
+      {isEdit && <button className="w-full text-nextp-danger font-bold py-2" onClick={remove} disabled={saving}>Apagar produto</button>}
     </SheetShell>
   );
 }

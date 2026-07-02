@@ -16,10 +16,11 @@ type Props = {
   occurrence: Occurrence;
   onClose: () => void;
   onChanged: () => void;
+  onEdit: (payment: RecurringPayment) => void;
 };
 
 /** TASK 16 — Detalhe da conta recorrente + histórico mensal completo. */
-export default function RecurringDetailSheet({ userId, payment, occurrence, onClose, onChanged }: Props) {
+export default function RecurringDetailSheet({ userId, payment, occurrence, onClose, onChanged, onEdit }: Props) {
   const [occ, setOcc] = useState(occurrence);
   const [history, setHistory] = useState<Occurrence[] | null>(null);
   const [showHistory, setShowHistory] = useState(false);
@@ -72,7 +73,10 @@ export default function RecurringDetailSheet({ userId, payment, occurrence, onCl
             <CategoryIcon name={payment.name} size={40} />
             <h2 className="text-xl font-black">{payment.name}</h2>
           </div>
-          <button onClick={onClose} className="text-nextp-muted font-bold">Fechar</button>
+          <div className="flex items-center gap-3">
+            <button onClick={() => onEdit(payment)} className="text-nextp-blue font-bold text-sm">Editar</button>
+            <button onClick={onClose} className="text-nextp-muted font-bold">Fechar</button>
+          </div>
         </div>
 
         <div className="clay-card-soft space-y-2">
