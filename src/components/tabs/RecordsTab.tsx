@@ -51,29 +51,31 @@ export default function RecordsTab({ userId, categories, onEdit, onQuickAdd }: P
 
   return (
     <div className="px-5 py-2 space-y-4">
-      {/* Card Hoje — o mascote "quebra" o topo do card, como na referência visual */}
-      <div className="relative pt-3">
-        <div className="clay-hero flex items-center justify-between pr-24">
+      {/* Card Hoje — mais estreito nas laterais; o mascote fica sobretudo no fundo branco, à direita */}
+      <div className="flex items-end gap-1 pt-10">
+        <div className="clay-hero flex-1 py-4 px-4">
           <div className="relative z-10">
-            <p className="text-white/80 text-sm font-bold">Hoje</p>
-            <p className="text-4xl font-black leading-tight">{eur(dayTotal)}</p>
-            <p className="text-white/80 text-sm">{dayExpenses.length} {dayExpenses.length === 1 ? "gasto" : "gastos"}</p>
+            <p className="text-white/80 text-xs font-bold">Hoje</p>
+            <p className="text-3xl font-black leading-tight">{eur(dayTotal)}</p>
+            <p className="text-white/80 text-xs">{dayExpenses.length} {dayExpenses.length === 1 ? "gasto" : "gastos"}</p>
           </div>
         </div>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src="/illustrations/registos-mascot.png"
-          alt=""
-          width={128}
-          height={128}
-          className="absolute z-10 pointer-events-none select-none"
-          style={{ top: "-14px", right: "4px" }}
-          draggable={false}
-        />
+        <div className="w-24 shrink-0 relative h-0">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/illustrations/registos-mascot.png"
+            alt=""
+            width={168}
+            height={187}
+            className="absolute pointer-events-none select-none"
+            style={{ bottom: "-4px", right: "-8px" }}
+            draggable={false}
+          />
+        </div>
       </div>
 
       {/* Card Este mês + orçamento */}
-      <button onClick={setMonthlyBudget} className="clay-card w-full text-left space-y-2">
+      <button onClick={setMonthlyBudget} className="clay-card w-full text-left space-y-2 py-4 px-4">
         <div className="flex items-end justify-between">
           <div>
             <p className="text-nextp-muted text-xs font-bold uppercase">Este mês</p>
