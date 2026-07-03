@@ -40,4 +40,28 @@ body {
   .clay-chip {
     @apply rounded-full px-3 py-2 text-sm font-bold shadow-clay-sm active:scale-95 transition-transform;
   }
+
+  /* Card "hero" azul com gradiente + brilho — usado nos cards principais
+     (Hoje, totais). Nunca azul chapado: tem profundidade tipo claymorphism. */
+  .clay-hero {
+    @apply relative rounded-clay-lg shadow-clay text-white p-5 overflow-hidden;
+    background: linear-gradient(150deg, #4C9DFF 0%, #006DFF 45%, #0052C4 100%);
+  }
+  .clay-hero::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.28) 0%, rgba(255, 255, 255, 0) 55%);
+    pointer-events: none;
+  }
+  .clay-hero::after {
+    content: "";
+    position: absolute;
+    width: 140%;
+    height: 60%;
+    left: -20%;
+    top: -35%;
+    background: radial-gradient(closest-side, rgba(255, 255, 255, 0.35), rgba(255, 255, 255, 0));
+    pointer-events: none;
+  }
 }

@@ -51,15 +51,25 @@ export default function RecordsTab({ userId, categories, onEdit, onQuickAdd }: P
 
   return (
     <div className="px-5 py-2 space-y-4">
-      {/* Card Hoje (azul) */}
-      <div className="clay-card bg-nextp-blue text-white flex items-center justify-between overflow-hidden">
-        <div>
-          <p className="text-white/80 text-sm font-bold">Hoje</p>
-          <p className="text-4xl font-black leading-tight">{eur(dayTotal)}</p>
-          <p className="text-white/80 text-sm">{dayExpenses.length} {dayExpenses.length === 1 ? "gasto" : "gastos"}</p>
+      {/* Card Hoje — o mascote "quebra" o topo do card, como na referência visual */}
+      <div className="relative pt-3">
+        <div className="clay-hero flex items-center justify-between pr-24">
+          <div className="relative z-10">
+            <p className="text-white/80 text-sm font-bold">Hoje</p>
+            <p className="text-4xl font-black leading-tight">{eur(dayTotal)}</p>
+            <p className="text-white/80 text-sm">{dayExpenses.length} {dayExpenses.length === 1 ? "gasto" : "gastos"}</p>
+          </div>
         </div>
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/illustrations/registos-mascot.png" alt="" width={84} height={84} className="shrink-0" draggable={false} />
+        <img
+          src="/illustrations/registos-mascot.png"
+          alt=""
+          width={128}
+          height={128}
+          className="absolute z-10 pointer-events-none select-none"
+          style={{ top: "-14px", right: "4px" }}
+          draggable={false}
+        />
       </div>
 
       {/* Card Este mês + orçamento */}

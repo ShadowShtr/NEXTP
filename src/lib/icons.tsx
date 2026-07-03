@@ -25,12 +25,18 @@ function categoryKey(name: string): CatKey {
   return "other";
 }
 
-/** Ícones 3D premium (pack oficial) — só existem para estas categorias; as restantes usam o SVG clay. */
+/** Ícones 3D premium (pack oficial) — health ainda usa o SVG clay (sem PNG correspondente). */
 const PNG_ICONS: Partial<Record<CatKey, string>> = {
   food: "/icons/categories-png/category-food-burger.png",
   fun: "/icons/categories-png/category-fun-game-controller.png",
   home: "/icons/categories-png/category-home-house.png",
   transport: "/icons/categories-png/category-transport-bus.png",
+  market: "/icons/categories-png/category-market.png",
+  "fixed-bill": "/icons/categories-png/category-fixed-bill.png",
+  documents: "/icons/categories-png/category-documents.png",
+  family: "/icons/categories-png/category-family.png",
+  other: "/icons/categories-png/category-other.png",
+  work: "/icons/categories-png/category-work.png",
 };
 
 /** nome da categoria → ficheiro SVG em /public/icons/categories (fallback quando não há PNG 3D). */

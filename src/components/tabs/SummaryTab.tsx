@@ -163,8 +163,8 @@ export default function SummaryTab({ userId }: { userId: string }) {
       )}
 
       {/* Gastos Invisíveis */}
-      <div className="clay-card bg-gradient-to-br from-nextp-blue to-[#3D93FF] text-white flex items-center gap-3">
-        <div className="flex-1 space-y-1">
+      <div className="clay-hero flex items-center gap-3">
+        <div className="relative z-10 flex-1 space-y-1">
           <h2 className="font-black">Gastos Invisíveis</h2>
           <p className="text-3xl font-black">{eur(stats.smallTotal)}</p>
           <p className="text-white/80 text-sm">
@@ -172,7 +172,7 @@ export default function SummaryTab({ userId }: { userId: string }) {
           </p>
         </div>
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/icons/features/feature-invisible-expenses.svg" width={72} height={72} alt="" draggable={false} />
+        <img src="/icons/features/feature-invisible-expenses.svg" width={72} height={72} alt="" className="relative z-10" draggable={false} />
       </div>
     </div>
   );
@@ -193,15 +193,15 @@ function MotivationalCard({ streak, monthOnTrack, hasExpenses }: { streak: numbe
   ];
 
   return (
-    <div className="clay-card bg-nextp-blue text-white space-y-3">
-      <div className="flex items-center gap-3">
+    <div className="clay-hero space-y-3">
+      <div className="relative z-10 flex items-center gap-3">
         <FeatureIcon name="trophy" size={48} />
         <div>
           <p className="font-black text-lg">{message}</p>
           {streak > 0 && <p className="text-white/80 text-sm">Sequência: {streak} {streak === 1 ? "dia" : "dias"} registando gastos</p>}
         </div>
       </div>
-      <div className="flex gap-3">
+      <div className="relative z-10 flex gap-3">
         {achievements.map((a) => (
           <div key={a.label} className={`flex-1 flex flex-col items-center gap-1 rounded-clay py-2 ${a.unlocked ? "bg-white/15" : "bg-white/5 opacity-50"}`}>
             <FeatureIcon name={a.icon} size={28} />
