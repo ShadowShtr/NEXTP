@@ -51,47 +51,46 @@ export default function RecordsTab({ userId, categories, onEdit, onQuickAdd }: P
 
   return (
     <div className="px-5 py-2 space-y-4">
-      {/* Card Hoje — mais estreito nas laterais; o mascote fica sobretudo no fundo branco, à direita */}
-      <div className="flex items-end gap-1 pt-10">
-        <div className="clay-hero flex-1 py-4 px-4">
+      {/* Cards Hoje + Este mês — ambos mais estreitos; o mascote (grande) atravessa os dois,
+          sobretudo no fundo branco à direita, sobrepondo o canto de cada card. */}
+      <div className="relative pt-3">
+        <div className="clay-hero py-4 px-4 pr-24">
           <div className="relative z-10">
             <p className="text-white/80 text-xs font-bold">Hoje</p>
             <p className="text-3xl font-black leading-tight">{eur(dayTotal)}</p>
             <p className="text-white/80 text-xs">{dayExpenses.length} {dayExpenses.length === 1 ? "gasto" : "gastos"}</p>
           </div>
         </div>
-        <div className="w-24 shrink-0 relative h-0">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="/illustrations/registos-mascot.png"
-            alt=""
-            width={168}
-            height={187}
-            className="absolute pointer-events-none select-none"
-            style={{ bottom: "-4px", right: "-8px" }}
-            draggable={false}
-          />
-        </div>
-      </div>
 
-      {/* Card Este mês + orçamento */}
-      <button onClick={setMonthlyBudget} className="clay-card w-full text-left space-y-2 py-4 px-4">
-        <div className="flex items-end justify-between">
-          <div>
-            <p className="text-nextp-muted text-xs font-bold uppercase">Este mês</p>
-            <p className="text-2xl font-black">{eur(monthTotal)}</p>
-          </div>
-          <p className="text-nextp-muted text-sm">{budget ? `de ${eur(budget)}` : "definir orçamento"}</p>
-        </div>
-        {pct !== null && (
-          <>
-            <div className="h-2.5 rounded-full bg-nextp-cardsoft overflow-hidden">
-              <div className={`h-full ${pct >= 100 ? "bg-nextp-danger" : "bg-nextp-blue"}`} style={{ width: `${pct}%` }} />
+        <button onClick={setMonthlyBudget} className="clay-card w-full text-left space-y-2 py-4 px-4 pr-24 mt-3">
+          <div className="flex items-end justify-between">
+            <div>
+              <p className="text-nextp-muted text-xs font-bold uppercase">Este mês</p>
+              <p className="text-2xl font-black">{eur(monthTotal)}</p>
             </div>
-            <p className="text-right text-xs font-bold text-nextp-muted">{pct}%</p>
-          </>
-        )}
-      </button>
+            <p className="text-nextp-muted text-sm">{budget ? `de ${eur(budget)}` : "definir orçamento"}</p>
+          </div>
+          {pct !== null && (
+            <>
+              <div className="h-2.5 rounded-full bg-nextp-cardsoft overflow-hidden">
+                <div className={`h-full ${pct >= 100 ? "bg-nextp-danger" : "bg-nextp-blue"}`} style={{ width: `${pct}%` }} />
+              </div>
+              <p className="text-right text-xs font-bold text-nextp-muted">{pct}%</p>
+            </>
+          )}
+        </button>
+
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/illustrations/registos-mascot.png"
+          alt=""
+          width={210}
+          height={234}
+          className="absolute z-20 pointer-events-none select-none"
+          style={{ top: "-18px", right: "-6px" }}
+          draggable={false}
+        />
+      </div>
 
       {/* Categorias rápidas */}
       <div>
