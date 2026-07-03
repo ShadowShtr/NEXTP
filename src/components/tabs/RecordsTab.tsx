@@ -76,6 +76,7 @@ export default function RecordsTab({ userId, categories, onEdit, onQuickAdd }: P
           )}
         </button>
 
+        {/* Ancorado pela BASE: bottom 0 = linha final do card Este mês (nunca fica a "voar"). */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src="/illustrations/registos-mascot.png"
@@ -83,7 +84,7 @@ export default function RecordsTab({ userId, categories, onEdit, onQuickAdd }: P
           width={215}
           height={240}
           className="absolute z-20 pointer-events-none select-none"
-          style={{ top: "-16px", right: "-6px" }}
+          style={{ bottom: "0px", right: "-6px" }}
           draggable={false}
         />
       </div>
