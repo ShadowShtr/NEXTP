@@ -51,10 +51,11 @@ export default function RecordsTab({ userId, categories, onEdit, onQuickAdd }: P
 
   return (
     <div className="px-5 py-2 space-y-4">
-      {/* Cards Hoje + Este mês — ambos mais estreitos; o mascote (grande) atravessa os dois,
-          sobretudo no fundo branco à direita, sobrepondo o canto de cada card. */}
-      <div className="relative pt-3">
-        <div className="clay-hero py-4 px-4 pr-32">
+      {/* Cards Hoje + Este mês — os cards TERMINAM antes do mascote (mr): atrás dele
+          fica o fundo branco da página; ele só sobrepõe a ponta de cada card e
+          desce até à linha final do card Este mês. */}
+      <div className="relative pt-4">
+        <div className="clay-hero py-4 px-4 mr-28">
           <div className="relative z-10">
             <p className="text-white/80 text-xs font-bold">Hoje</p>
             <p className="text-3xl font-black leading-tight">{eur(dayTotal)}</p>
@@ -62,8 +63,7 @@ export default function RecordsTab({ userId, categories, onEdit, onQuickAdd }: P
           </div>
         </div>
 
-        <button onClick={setMonthlyBudget} className="clay-card w-full text-left space-y-2 py-4 px-4 pr-32 mt-3">
-          {/* Todo o texto fica à esquerda — a zona direita (pr-32) pertence ao mascote. */}
+        <button onClick={setMonthlyBudget} className="clay-card block text-left space-y-2 py-4 px-4 mt-3" style={{ width: "calc(100% - 7rem)" }}>
           <p className="text-nextp-muted text-xs font-bold uppercase">Este mês</p>
           <p className="text-2xl font-black leading-tight">{eur(monthTotal)}</p>
           <p className="text-nextp-muted text-xs">
@@ -80,10 +80,10 @@ export default function RecordsTab({ userId, categories, onEdit, onQuickAdd }: P
         <img
           src="/illustrations/registos-mascot.png"
           alt=""
-          width={200}
-          height={223}
+          width={215}
+          height={240}
           className="absolute z-20 pointer-events-none select-none"
-          style={{ top: "-14px", right: "-4px" }}
+          style={{ top: "-16px", right: "-6px" }}
           draggable={false}
         />
       </div>
