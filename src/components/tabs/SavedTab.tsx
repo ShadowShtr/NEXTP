@@ -70,9 +70,10 @@ export default function SavedTab({ userId }: { userId: string }) {
     <div className="px-5 py-2 space-y-4">
       <h1 className="text-2xl font-black">Guardados</h1>
 
-      {/* Header azul com total — carteira grande no fundo branco, sobrepondo o canto do card */}
-      <div className="relative pt-3">
-        <div className="clay-hero py-4 px-4 pr-24">
+      {/* Header azul com total — carteira grande no fundo branco, sobrepondo só a ponta
+          lateral do card (nunca desce sobre as tabs Comprados/Quero comprar). */}
+      <div className="relative pt-8">
+        <div className="clay-hero py-4 px-4 pr-32">
           <div className="relative z-10">
             <p className="text-white/80 text-xs font-bold uppercase">{sub === "purchased" ? "Total guardado" : "Total previsto"}</p>
             <p className="text-3xl font-black">{eur(sub === "purchased" ? total : wishTotal)}</p>
@@ -82,10 +83,10 @@ export default function SavedTab({ userId }: { userId: string }) {
         <img
           src="/illustrations/guardados-wallet.png"
           alt=""
-          width={150}
-          height={150}
+          width={140}
+          height={140}
           className="absolute z-20 pointer-events-none select-none"
-          style={{ top: "-16px", right: "-4px" }}
+          style={{ top: "-8px", right: "-4px" }}
           draggable={false}
         />
       </div>

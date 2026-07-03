@@ -54,7 +54,7 @@ export default function RecordsTab({ userId, categories, onEdit, onQuickAdd }: P
       {/* Cards Hoje + Este mês — ambos mais estreitos; o mascote (grande) atravessa os dois,
           sobretudo no fundo branco à direita, sobrepondo o canto de cada card. */}
       <div className="relative pt-3">
-        <div className="clay-hero py-4 px-4 pr-24">
+        <div className="clay-hero py-4 px-4 pr-32">
           <div className="relative z-10">
             <p className="text-white/80 text-xs font-bold">Hoje</p>
             <p className="text-3xl font-black leading-tight">{eur(dayTotal)}</p>
@@ -62,21 +62,17 @@ export default function RecordsTab({ userId, categories, onEdit, onQuickAdd }: P
           </div>
         </div>
 
-        <button onClick={setMonthlyBudget} className="clay-card w-full text-left space-y-2 py-4 px-4 pr-24 mt-3">
-          <div className="flex items-end justify-between">
-            <div>
-              <p className="text-nextp-muted text-xs font-bold uppercase">Este mês</p>
-              <p className="text-2xl font-black">{eur(monthTotal)}</p>
-            </div>
-            <p className="text-nextp-muted text-sm">{budget ? `de ${eur(budget)}` : "definir orçamento"}</p>
-          </div>
+        <button onClick={setMonthlyBudget} className="clay-card w-full text-left space-y-2 py-4 px-4 pr-32 mt-3">
+          {/* Todo o texto fica à esquerda — a zona direita (pr-32) pertence ao mascote. */}
+          <p className="text-nextp-muted text-xs font-bold uppercase">Este mês</p>
+          <p className="text-2xl font-black leading-tight">{eur(monthTotal)}</p>
+          <p className="text-nextp-muted text-xs">
+            {budget ? `de ${eur(budget)}${pct !== null ? ` · ${pct}%` : ""}` : "definir orçamento"}
+          </p>
           {pct !== null && (
-            <>
-              <div className="h-2.5 rounded-full bg-nextp-cardsoft overflow-hidden">
-                <div className={`h-full ${pct >= 100 ? "bg-nextp-danger" : "bg-nextp-blue"}`} style={{ width: `${pct}%` }} />
-              </div>
-              <p className="text-right text-xs font-bold text-nextp-muted">{pct}%</p>
-            </>
+            <div className="h-2.5 rounded-full bg-nextp-cardsoft overflow-hidden">
+              <div className={`h-full ${pct >= 100 ? "bg-nextp-danger" : "bg-nextp-blue"}`} style={{ width: `${pct}%` }} />
+            </div>
           )}
         </button>
 
@@ -84,10 +80,10 @@ export default function RecordsTab({ userId, categories, onEdit, onQuickAdd }: P
         <img
           src="/illustrations/registos-mascot.png"
           alt=""
-          width={210}
-          height={234}
+          width={200}
+          height={223}
           className="absolute z-20 pointer-events-none select-none"
-          style={{ top: "-18px", right: "-6px" }}
+          style={{ top: "-14px", right: "-4px" }}
           draggable={false}
         />
       </div>
