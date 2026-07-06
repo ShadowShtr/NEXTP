@@ -6,9 +6,11 @@ import { eur, monthBounds, todayISO } from "@/lib/format";
 import { BarChart, DonutChart, Legend, type Slice } from "@/components/charts/Charts";
 import { computeStreak } from "@/lib/streak";
 import { FeatureIcon } from "@/lib/icons";
+import IncomeSheet, { type IncomeEntry } from "@/components/IncomeSheet";
+import HistoryView from "@/components/HistoryView";
 
 type Row = { amount: number; date: string; category_id: string | null };
-type Cat = { id: string; name: string; color: string };
+type Cat = { id: string; name: string; color: string; monthly_limit: number | null };
 type OccRow = { status: string; expected_amount: number; paid_amount: number };
 
 const DEFAULT_SMALL_LIMIT = 5; // fallback quando o utilizador ainda não configurou (user_settings.small_expense_limit)
@@ -28,6 +30,10 @@ export default function SummaryTab({ userId }: { userId: string }) {
   const [occRows, setOccRows] = useState<OccRow[]>([]);
   const [streak, setStreak] = useState(0);
   const [smallLimit, setSmallLimit] = useState(DEFAULT_SMALL_LIMIT);
+  const [income, setIncome] = useState<IncomeEntry[]>([]);
+  const [incomeOpen, setIncomeOpen] = useState(false);
+  const [editingIncome, setEditingIncome] = useState<IncomeEntry | null>(null);
+  const [historyOpen, setHistoryOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const today = todayISO();
   const now = new Date();
@@ -37,19 +43,21 @@ export default function SummaryTab({ userId }: { userId: string }) {
     const prevStart = prevMonthFirstDay(today);
     const { start: prevStartB, end: prevEnd } = monthBounds(prevStart);
     const sb = getSupabase();
-    const [ex, ct, prev, occ, settings] = await Promise.all([
+    const [ex, ct, prev, occ, settings, inc] = await Promise.all([
       sb.from("expenses").select("amount,date,category_id").eq("user_id", userId).gte("date", start).lte("date", end),
-      sb.from("categories").select("id,name,color").eq("user_id", userId),
+      sb.from("categories").select("id,name,color,monthly_limit").eq("user_id", userId),
       sb.from("expenses").select("amount").eq("user_id", userId).gte("date", prevStartB).lte("date", prevEnd),
       sb.from("recurring_occurrences").select("status,expected_amount,paid_amount")
         .eq("user_id", userId).eq("year", now.getFullYear()).eq("month", now.getMonth() + 1),
       sb.from("user_settings").select("small_expense_limit").eq("user_id", userId).maybeSingle(),
+      sb.from("income_entries").select("*").eq("user_id", userId).gte("date", start).lte("date", end).order("date", { ascending: false }),
     ]);
     setRows((ex.data ?? []) as Row[]);
     setCats((ct.data ?? []) as Cat[]);
     setPrevTotal((prev.data ?? []).reduce((s, r) => s + Number(r.amount), 0));
     setOccRows((occ.data ?? []) as OccRow[]);
     setSmallLimit(settings.data?.small_expense_limit ?? DEFAULT_SMALL_LIMIT);
+    setIncome((inc.data ?? []) as IncomeEntry[]);
     setLoading(false);
     computeStreak(userId).then(setStreak);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -102,6 +110,26 @@ export default function SummaryTab({ userId }: { userId: string }) {
     return out;
   }, [rows]);
 
+  const incomeTotal = useMemo(() => income.reduce((s, i) => s + Number(i.amount), 0), [income]);
+  const balance = incomeTotal - stats.total;
+
+  /** BUDGET-02 — progresso por categoria, só para as que têm monthly_limit definido. */
+  const categoryLimits = useMemo(() => {
+    const spentByCat = new Map<string, number>();
+    rows.forEach((r) => {
+      if (!r.category_id) return;
+      spentByCat.set(r.category_id, (spentByCat.get(r.category_id) ?? 0) + Number(r.amount));
+    });
+    return cats
+      .filter((c) => c.monthly_limit != null && c.monthly_limit > 0)
+      .map((c) => {
+        const spent = spentByCat.get(c.id) ?? 0;
+        const pct = Math.min(100, Math.round((spent / c.monthly_limit!) * 100));
+        return { id: c.id, name: c.name, spent, limit: c.monthly_limit!, pct };
+      })
+      .sort((a, b) => b.pct - a.pct);
+  }, [rows, cats]);
+
   if (loading) return <div className="px-5 py-3"><div className="clay-card text-center text-nextp-muted">A carregar…</div></div>;
 
   return (
@@ -113,6 +141,29 @@ export default function SummaryTab({ userId }: { userId: string }) {
       </div>
 
       <MotivationalCard streak={streak} monthOnTrack={recurringStats.total > 0 && recurringStats.pending === 0} hasExpenses={stats.count > 0} />
+
+      {/* INCOME-01 — Receitas e Saldo do mês */}
+      <div className="grid grid-cols-2 gap-3">
+        <Stat label="Receitas do mês" value={eur(incomeTotal)} success />
+        <Stat label="Saldo" value={eur(balance)} danger={balance < 0} success={balance >= 0} />
+      </div>
+      <button onClick={() => { setEditingIncome(null); setIncomeOpen(true); }} className="clay-btn-ghost w-full text-sm py-2.5">
+        + Nova receita
+      </button>
+      {income.length > 0 && (
+        <div className="space-y-2">
+          {income.slice(0, 5).map((i) => (
+            <button key={i.id} onClick={() => { setEditingIncome(i); setIncomeOpen(true); }}
+              className="clay-card-soft w-full flex items-center justify-between py-2.5 px-3 text-left">
+              <div className="min-w-0">
+                <p className="font-bold text-sm truncate">{i.description}</p>
+                <p className="text-nextp-muted text-xs">{i.source ?? "Receita"}</p>
+              </div>
+              <p className="font-black text-nextp-success shrink-0">+{eur(Number(i.amount))}</p>
+            </button>
+          ))}
+        </div>
+      )}
 
       <div className="grid grid-cols-2 gap-3">
         <Stat label="Gasto hoje" value={eur(stats.day)} accent />
@@ -146,9 +197,39 @@ export default function SummaryTab({ userId }: { userId: string }) {
 
       {/* Evolução diária */}
       <div className="clay-card space-y-3">
-        <h2 className="font-black">Gastos por dia <span className="text-nextp-muted text-xs font-normal">· últimos 7 dias</span></h2>
+        <div className="flex items-center justify-between">
+          <h2 className="font-black">Gastos por dia <span className="text-nextp-muted text-xs font-normal">· últimos 7 dias</span></h2>
+          <button onClick={() => setHistoryOpen(true)} className="text-nextp-blue text-xs font-bold underline shrink-0">
+            Ver histórico
+          </button>
+        </div>
         <BarChart data={byDay} />
       </div>
+
+      {/* BUDGET-02 — Limites por categoria */}
+      {categoryLimits.length > 0 && (
+        <div className="clay-card space-y-3">
+          <h2 className="font-black">Limites por categoria</h2>
+          {categoryLimits.map((c) => (
+            <div key={c.id} className="space-y-1">
+              <div className="flex items-center justify-between text-sm">
+                <span className="font-bold">{c.name}</span>
+                <span className={`font-bold ${c.pct >= 100 ? "text-nextp-danger" : c.pct >= 80 ? "text-nextp-warning" : "text-nextp-muted"}`}>
+                  {eur(c.spent)} / {eur(c.limit)}
+                </span>
+              </div>
+              <div className="h-2 rounded-full bg-nextp-cardsoft overflow-hidden">
+                <div className={`h-full ${c.pct >= 100 ? "bg-nextp-danger" : c.pct >= 80 ? "bg-nextp-warning" : "bg-nextp-blue"}`} style={{ width: `${c.pct}%` }} />
+              </div>
+              {c.pct >= 80 && (
+                <p className={`text-xs font-bold ${c.pct >= 100 ? "text-nextp-danger" : "text-nextp-warning"}`}>
+                  {c.pct >= 100 ? "Limite ultrapassado!" : `Já gastaste ${c.pct}% do limite`}
+                </p>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Recorrentes pagos x pendentes */}
       {recurringStats.total > 0 && (
@@ -177,6 +258,17 @@ export default function SummaryTab({ userId }: { userId: string }) {
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src="/icons/features/feature-invisible-expenses.svg" width={72} height={72} alt="" className="relative z-10" draggable={false} />
       </div>
+
+      {incomeOpen && (
+        <IncomeSheet
+          userId={userId}
+          editing={editingIncome}
+          onClose={() => { setIncomeOpen(false); setEditingIncome(null); }}
+          onSaved={() => { setIncomeOpen(false); setEditingIncome(null); load(); }}
+        />
+      )}
+
+      {historyOpen && <HistoryView userId={userId} onClose={() => setHistoryOpen(false)} />}
     </div>
   );
 }
@@ -216,11 +308,12 @@ function MotivationalCard({ streak, monthOnTrack, hasExpenses }: { streak: numbe
   );
 }
 
-function Stat({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
+function Stat({ label, value, accent, success, danger }: { label: string; value: string; accent?: boolean; success?: boolean; danger?: boolean }) {
+  const color = danger ? "text-nextp-danger" : success ? "text-nextp-success" : accent ? "text-nextp-blue" : "";
   return (
     <div className="clay-card-soft">
       <p className="text-nextp-muted text-xs font-bold uppercase">{label}</p>
-      <p className={`text-xl font-black ${accent ? "text-nextp-blue" : ""}`}>{value}</p>
+      <p className={`text-xl font-black ${color}`}>{value}</p>
     </div>
   );
 }

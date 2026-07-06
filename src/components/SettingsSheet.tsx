@@ -5,6 +5,7 @@ import { getSupabase } from "@/lib/supabase";
 import { exportBackup, importBackup } from "@/lib/backup";
 import { FeatureIcon } from "@/lib/icons";
 import { useLockBodyScroll } from "@/lib/useLockBodyScroll";
+import CategoryLimitsSheet from "@/components/CategoryLimitsSheet";
 
 type Settings = {
   daily_reminder_enabled: boolean;
@@ -23,6 +24,7 @@ export default function SettingsSheet({ userId, email, onClose, onLogout }: {
   const [msg, setMsg] = useState<string | null>(null);
   const [notifSupported, setNotifSupported] = useState(false);
   const [notifPermission, setNotifPermission] = useState<NotificationPermission | null>(null);
+  const [limitsOpen, setLimitsOpen] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -143,7 +145,13 @@ export default function SettingsSheet({ userId, email, onClose, onLogout }: {
             onChange={(e) => { const v = parseFloat(e.target.value.replace(",", ".")); if (!isNaN(v)) save({ small_expense_limit: v }); }} />
         </div>
 
+        {/* BUDGET-02 */}
+        <button onClick={() => setLimitsOpen(true)} className="clay-btn-ghost w-full text-sm py-2.5">
+          Limites por categoria
+        </button>
+
         <button onClick={onLogout} className="w-full text-nextp-danger font-bold py-2">Sair da conta</button>
+        {limitsOpen && <CategoryLimitsSheet userId={userId} onClose={() => setLimitsOpen(false)} />}
       </div>
     </div>
   );
