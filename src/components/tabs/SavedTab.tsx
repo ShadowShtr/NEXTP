@@ -6,6 +6,7 @@ import { eur, prettyDate, todayISO } from "@/lib/format";
 import { convertWishlistToSavedItem, isAmazonUrl, isValidUrl, type WishlistItem, type WishlistPriority } from "@/lib/wishlist";
 import { logMetric } from "@/lib/metrics";
 import { useLockBodyScroll } from "@/lib/useLockBodyScroll";
+import PhotoField from "@/components/PhotoField";
 
 type SavedItem = {
   id: string;
@@ -293,13 +294,7 @@ function SavedSheet({ userId, editing, onClose, onSaved }: { userId: string; edi
       <input className="clay-input" inputMode="decimal" placeholder="Valor (€)" value={amount} onChange={(e) => setAmount(e.target.value)} />
       <input className="clay-input" placeholder="Loja (opcional)" value={store} onChange={(e) => setStore(e.target.value)} />
       <input className="clay-input" placeholder="Link da compra (opcional)" value={url} onChange={(e) => setUrl(e.target.value)} />
-      <div className="flex items-center gap-3">
-        <input className="clay-input flex-1" placeholder="Link da foto do produto (opcional)" value={photoUrl} onChange={(e) => setPhotoUrl(e.target.value)} />
-        {photoUrl && isValidUrl(photoUrl) && (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={photoUrl} alt="" className="w-12 h-12 rounded-clay object-cover shrink-0 shadow-clay-sm" onError={(e) => (e.currentTarget.style.display = "none")} />
-        )}
-      </div>
+      <PhotoField userId={userId} value={photoUrl} onChange={setPhotoUrl} />
       <div className="grid grid-cols-2 gap-3">
         <div>
           <p className="text-nextp-muted text-xs font-bold uppercase mb-1">Data compra</p>
@@ -379,13 +374,7 @@ function WishlistSheet({ userId, editing, onClose, onSaved }: { userId: string; 
       </div>
       <input className="clay-input" placeholder="Link Amazon (opcional)" value={amazonUrl ?? ""} onChange={(e) => setAmazonUrl(e.target.value)} />
       <input className="clay-input" placeholder="Link externo (opcional)" value={externalUrl ?? ""} onChange={(e) => setExternalUrl(e.target.value)} />
-      <div className="flex items-center gap-3">
-        <input className="clay-input flex-1" placeholder="Link da foto do produto (opcional)" value={photoUrl} onChange={(e) => setPhotoUrl(e.target.value)} />
-        {photoUrl && isValidUrl(photoUrl) && (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={photoUrl} alt="" className="w-12 h-12 rounded-clay object-cover shrink-0 shadow-clay-sm" onError={(e) => (e.currentTarget.style.display = "none")} />
-        )}
-      </div>
+      <PhotoField userId={userId} value={photoUrl} onChange={setPhotoUrl} />
       <div>
         <p className="text-nextp-muted text-xs font-bold uppercase mb-1">Prioridade</p>
         <div className="flex gap-2">

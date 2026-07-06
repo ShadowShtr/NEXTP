@@ -13,6 +13,9 @@ import PlanningTab from "@/components/tabs/PlanningTab";
 import SummaryTab from "@/components/tabs/SummaryTab";
 import AddExpenseSheet from "@/components/AddExpenseSheet";
 import SettingsSheet from "@/components/SettingsSheet";
+import AlertsSheet from "@/components/AlertsSheet";
+import { computeAlerts } from "@/lib/alerts";
+import { FeatureIcon } from "@/lib/icons";
 
 type Tab = "records" | "saved" | "planning" | "summary";
 
@@ -26,6 +29,8 @@ export default function AppShell({ session }: { session: Session }) {
   const [preset, setPreset] = useState<string | null>(null);
   const [refresh, setRefresh] = useState(0);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [alertsOpen, setAlertsOpen] = useState(false);
+  const [alertCount, setAlertCount] = useState(0);
 
   const loadCats = useCallback(async () => {
     await ensureDefaultCategories(userId);
@@ -34,6 +39,7 @@ export default function AppShell({ session }: { session: Session }) {
   }, [userId]);
 
   useEffect(() => { loadCats(); }, [loadCats]);
+  useEffect(() => { computeAlerts(userId).then((a) => setAlertCount(a.length)); }, [userId, refresh]);
 
   function openAdd() { setEditing(null); setPreset(null); setAddOpen(true); }
   function openQuick(catId: string) { setEditing(null); setPreset(catId); setAddOpen(true); }
@@ -52,11 +58,20 @@ export default function AppShell({ session }: { session: Session }) {
           <div className="w-9 h-9 rounded-clay bg-nextp-icon grid place-items-center text-white font-black shadow-clay-sm">N</div>
           <span className="font-black text-nextp-blue text-xl">NextP</span>
         </div>
-        <button onClick={() => setSettingsOpen(true)} aria-label="Configurações"
-          className="w-9 h-9 rounded-full bg-white shadow-clay-sm grid place-items-center">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/icons/system/system-settings.svg" width={22} height={22} alt="" draggable={false} />
-        </button>
+        <div className="flex items-center gap-2">
+          <button onClick={() => setAlertsOpen(true)} aria-label="Alertas"
+            className="relative w-9 h-9 rounded-full bg-white shadow-clay-sm grid place-items-center">
+            <FeatureIcon name="bell" size={20} />
+            {alertCount > 0 && (
+              <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-nextp-danger ring-2 ring-white" />
+            )}
+          </button>
+          <button onClick={() => setSettingsOpen(true)} aria-label="Configurações"
+            className="w-9 h-9 rounded-full bg-white shadow-clay-sm grid place-items-center">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/icons/system/system-settings.svg" width={22} height={22} alt="" draggable={false} />
+          </button>
+        </div>
       </header>
 
       <main className="flex-1 overflow-y-auto pb-28">
@@ -83,6 +98,8 @@ export default function AppShell({ session }: { session: Session }) {
       {settingsOpen && (
         <SettingsSheet userId={userId} email={email} onClose={() => setSettingsOpen(false)} onLogout={logout} />
       )}
+
+      {alertsOpen && <AlertsSheet userId={userId} onClose={() => setAlertsOpen(false)} />}
     </div>
   );
 }
