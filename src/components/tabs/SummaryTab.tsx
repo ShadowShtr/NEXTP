@@ -11,7 +11,7 @@ type Row = { amount: number; date: string; category_id: string | null };
 type Cat = { id: string; name: string; color: string };
 type OccRow = { status: string; expected_amount: number; paid_amount: number };
 
-const SMALL_LIMIT = 5; // Gastos Invisíveis (< 5 €)
+const DEFAULT_SMALL_LIMIT = 5; // fallback quando o utilizador ainda não configurou (user_settings.small_expense_limit)
 const DONUT_COLORS = ["#006DFF", "#12B76A", "#FDB022", "#FF7A9A", "#9B7EDE", "#38C0F0", "#F04438", "#98A2B3"];
 
 function prevMonthFirstDay(iso: string): string {
@@ -27,6 +27,7 @@ export default function SummaryTab({ userId }: { userId: string }) {
   const [prevTotal, setPrevTotal] = useState(0);
   const [occRows, setOccRows] = useState<OccRow[]>([]);
   const [streak, setStreak] = useState(0);
+  const [smallLimit, setSmallLimit] = useState(DEFAULT_SMALL_LIMIT);
   const [loading, setLoading] = useState(true);
   const today = todayISO();
   const now = new Date();
@@ -36,17 +37,19 @@ export default function SummaryTab({ userId }: { userId: string }) {
     const prevStart = prevMonthFirstDay(today);
     const { start: prevStartB, end: prevEnd } = monthBounds(prevStart);
     const sb = getSupabase();
-    const [ex, ct, prev, occ] = await Promise.all([
+    const [ex, ct, prev, occ, settings] = await Promise.all([
       sb.from("expenses").select("amount,date,category_id").eq("user_id", userId).gte("date", start).lte("date", end),
       sb.from("categories").select("id,name,color").eq("user_id", userId),
       sb.from("expenses").select("amount").eq("user_id", userId).gte("date", prevStartB).lte("date", prevEnd),
       sb.from("recurring_occurrences").select("status,expected_amount,paid_amount")
         .eq("user_id", userId).eq("year", now.getFullYear()).eq("month", now.getMonth() + 1),
+      sb.from("user_settings").select("small_expense_limit").eq("user_id", userId).maybeSingle(),
     ]);
     setRows((ex.data ?? []) as Row[]);
     setCats((ct.data ?? []) as Cat[]);
     setPrevTotal((prev.data ?? []).reduce((s, r) => s + Number(r.amount), 0));
     setOccRows((occ.data ?? []) as OccRow[]);
+    setSmallLimit(settings.data?.small_expense_limit ?? DEFAULT_SMALL_LIMIT);
     setLoading(false);
     computeStreak(userId).then(setStreak);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -60,11 +63,11 @@ export default function SummaryTab({ userId }: { userId: string }) {
     const daysElapsed = new Date().getDate();
     const avg = total / Math.max(1, daysElapsed);
     const biggest = rows.reduce((m, r) => Math.max(m, Number(r.amount)), 0);
-    const small = rows.filter((r) => Number(r.amount) < SMALL_LIMIT);
+    const small = rows.filter((r) => Number(r.amount) < smallLimit);
     const smallTotal = small.reduce((s, r) => s + Number(r.amount), 0);
     const change = prevTotal > 0 ? Math.round(((total - prevTotal) / prevTotal) * 100) : null;
     return { total, day, avg, biggest, smallTotal, smallCount: small.length, count: rows.length, change };
-  }, [rows, today, prevTotal]);
+  }, [rows, today, prevTotal, smallLimit]);
 
   const recurringStats = useMemo(() => {
     let paid = 0, pending = 0;
@@ -168,7 +171,7 @@ export default function SummaryTab({ userId }: { userId: string }) {
           <h2 className="font-black">Gastos Invisíveis</h2>
           <p className="text-3xl font-black">{eur(stats.smallTotal)}</p>
           <p className="text-white/80 text-sm">
-            {stats.smallCount} pequenas compras abaixo de {eur(SMALL_LIMIT)} — somam mais do que parece!
+            {stats.smallCount} pequenas compras abaixo de {eur(smallLimit)} — somam mais do que parece!
           </p>
         </div>
         {/* eslint-disable-next-line @next/next/no-img-element */}

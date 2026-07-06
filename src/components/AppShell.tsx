@@ -87,14 +87,23 @@ export default function AppShell({ session }: { session: Session }) {
   );
 }
 
+/** UI-02 — ícones oficiais 3D/SVG (nunca emoji) na navegação principal. */
+const NAV_ICONS: Record<Tab, string> = {
+  records: "/icons/categories-png/category-home-house.png",
+  saved: "/icons/features/feature-wallet.svg",
+  planning: "/icons/features/feature-calendar-check.svg",
+  summary: "/icons/features/feature-chart.svg",
+};
+
 function BottomNav({
   tab, setTab, onAdd,
 }: { tab: string; setTab: (t: Tab) => void; onAdd: () => void }) {
-  const item = (id: Tab, icon: string, label: string) => {
+  const item = (id: Tab, label: string) => {
     const active = tab === id;
     return (
       <button onClick={() => setTab(id)} className={`flex flex-col items-center gap-0.5 w-16 py-1 ${active ? "text-nextp-blue" : "text-nextp-muted"}`}>
-        <span className={`text-xl ${active ? "scale-110" : ""}`}>{icon}</span>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={NAV_ICONS[id]} alt="" width={26} height={26} className={active ? "scale-110" : "opacity-70"} draggable={false} />
         <span className="text-[10px] font-bold">{label}</span>
       </button>
     );
@@ -102,14 +111,14 @@ function BottomNav({
   return (
     <nav className="fixed bottom-0 inset-x-0 bg-white shadow-clay rounded-t-clay-xl flex items-center justify-between px-3"
       style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 6px)", paddingTop: "8px" }}>
-      {item("records", "🏠", "Registos")}
-      {item("saved", "📦", "Guardados")}
+      {item("records", "Registos")}
+      {item("saved", "Guardados")}
       <button onClick={onAdd} aria-label="Novo gasto"
         className="w-16 h-16 -mt-8 rounded-full bg-nextp-blue text-white text-4xl font-black shadow-clay-btn grid place-items-center active:scale-90 transition-transform ring-4 ring-white">
         ＋
       </button>
-      {item("planning", "📅", "Planeamento")}
-      {item("summary", "📊", "Resumo")}
+      {item("planning", "Planeamento")}
+      {item("summary", "Resumo")}
     </nav>
   );
 }

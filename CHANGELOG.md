@@ -4,6 +4,9 @@ Todas as mudanças relevantes do NextP. Formato baseado em [Keep a Changelog](ht
 
 ## [Unreleased]
 
+### Fixed
+- **Documentação alinhada ao produto real**: README, `docs/13` e `docs/19` referiam Kotlin/Room/OTP de fases anteriores. Reescritos para refletir o stack ativo (Next.js + Supabase + Vercel, login email+password) — Android permanece arquivado em `android/`.
+
 ### Added
 - **Assets NextP Clay System**: SVG masters de ícones (categorias, features, payment dots, saved, system, app) e backgrounds em `assets/`, servidos em `public/icons/`. Ligados à UI web (`CategoryIcon`, `FeatureIcon`, `PaymentDot`). Masterplan em `docs/19-claude-task-masterplan.md`.
 - **Web app (Next.js + Supabase)**: 4 abas funcionais (Registos com edição, Guardados, Planeamento com checklist recorrente, Resumo com gráficos e Gastos Invisíveis), navegação com **+ central**, login email+password, deploy Vercel.

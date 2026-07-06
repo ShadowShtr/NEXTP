@@ -5,6 +5,7 @@ import { getSupabase } from "@/lib/supabase";
 import type { Category, Expense } from "@/lib/types";
 import { eur, monthBounds, todayISO } from "@/lib/format";
 import { CategoryIcon } from "@/lib/icons";
+import BudgetSheet from "@/components/BudgetSheet";
 
 type Props = {
   userId: string;
@@ -19,6 +20,7 @@ export default function RecordsTab({ userId, categories, onEdit, onQuickAdd }: P
   const [monthTotal, setMonthTotal] = useState(0);
   const [budget, setBudget] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
+  const [budgetSheetOpen, setBudgetSheetOpen] = useState(false);
 
   const dayTotal = useMemo(() => dayExpenses.reduce((s, e) => s + Number(e.amount), 0), [dayExpenses]);
 
@@ -41,13 +43,6 @@ export default function RecordsTab({ userId, categories, onEdit, onQuickAdd }: P
   const catById = useMemo(() => new Map(categories.map((c) => [c.id, c])), [categories]);
   const pct = budget && budget > 0 ? Math.min(100, Math.round((monthTotal / budget) * 100)) : null;
 
-  async function setMonthlyBudget() {
-    const v = prompt("Orçamento mensal (€):", budget ? String(budget) : "");
-    if (v === null) return;
-    const n = parseFloat(v.replace(",", "."));
-    await getSupabase().from("user_settings").upsert({ user_id: userId, monthly_budget: isNaN(n) ? null : n }, { onConflict: "user_id" });
-    setBudget(isNaN(n) ? null : n);
-  }
 
   return (
     <div className="px-5 py-2 space-y-4">
@@ -63,7 +58,7 @@ export default function RecordsTab({ userId, categories, onEdit, onQuickAdd }: P
           </div>
         </div>
 
-        <button onClick={setMonthlyBudget} className="clay-card block text-left space-y-2 py-4 px-4 mt-3" style={{ width: "calc(100% - 7rem)" }}>
+        <button onClick={() => setBudgetSheetOpen(true)} className="clay-card block text-left space-y-2 py-4 px-4 mt-3" style={{ width: "calc(100% - 7rem)" }}>
           <p className="text-nextp-muted text-xs font-bold uppercase">Este mês</p>
           <p className="text-2xl font-black leading-tight">{eur(monthTotal)}</p>
           <p className="text-nextp-muted text-xs">
@@ -131,6 +126,15 @@ export default function RecordsTab({ userId, categories, onEdit, onQuickAdd }: P
           })
         )}
       </div>
+
+      {budgetSheetOpen && (
+        <BudgetSheet
+          userId={userId}
+          current={budget}
+          onClose={() => setBudgetSheetOpen(false)}
+          onSaved={(v) => { setBudget(v); setBudgetSheetOpen(false); }}
+        />
+      )}
     </div>
   );
 }

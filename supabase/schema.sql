@@ -163,6 +163,20 @@ create table if not exists public.user_settings (
 alter table public.user_settings add column if not exists backup_enabled boolean not null default false;
 alter table public.user_settings add column if not exists last_backup_at timestamptz;
 
+-- ---------- INCOME ENTRIES (Receitas, ver docs/02-requisitos.md) ----------
+create table if not exists public.income_entries (
+  id          uuid primary key default gen_random_uuid(),
+  user_id     uuid not null references auth.users(id) on delete cascade,
+  description text not null,
+  amount      numeric not null,
+  date        date not null,
+  source      text,
+  note        text,
+  created_at  timestamptz not null default now(),
+  updated_at  timestamptz not null default now()
+);
+create index if not exists income_user_date_idx on public.income_entries(user_id, date);
+
 -- ---------- METRIC EVENTS (ver docs/16-metricas.md) ----------
 create table if not exists public.metric_events (
   id         uuid primary key default gen_random_uuid(),
@@ -185,13 +199,15 @@ alter table public.recurring_payments     enable row level security;
 alter table public.recurring_occurrences  enable row level security;
 alter table public.user_settings          enable row level security;
 alter table public.metric_events          enable row level security;
+alter table public.income_entries         enable row level security;
 
 do $$
 declare t text;
 begin
   foreach t in array array[
     'categories','expenses','saved_items','wishlist_items','planning_items',
-    'recurring_payments','recurring_occurrences','user_settings','metric_events'
+    'recurring_payments','recurring_occurrences','user_settings','metric_events',
+    'income_entries'
   ]
   loop
     execute format('drop policy if exists "own_all" on public.%I;', t);
@@ -252,3 +268,86 @@ begin
 end $$;
 
 create unique index if not exists categories_user_name_uq on public.categories(user_id, name);
+
+-- ============================================================
+-- WISHLIST-02: conversão transacional wishlist -> comprado.
+-- Índice único: um wishlist_item nunca pode gerar mais de um saved_item.
+-- ============================================================
+create unique index if not exists saved_items_wishlist_item_uq
+  on public.saved_items(wishlist_item_id) where wishlist_item_id is not null;
+
+create or replace function public.convert_wishlist_to_saved_item(
+  p_wishlist_id uuid,
+  p_final_amount numeric,
+  p_purchase_date date,
+  p_count_as_expense boolean
+) returns table (saved_item_id uuid, expense_id uuid)
+language plpgsql
+as $$
+declare
+  v_user_id uuid := auth.uid();
+  v_wishlist public.wishlist_items;
+  v_saved_id uuid;
+  v_expense_id uuid;
+begin
+  select * into v_wishlist from public.wishlist_items
+    where id = p_wishlist_id and user_id = v_user_id
+    for update;
+
+  if not found then
+    raise exception 'wishlist item not found';
+  end if;
+
+  if v_wishlist.status = 'PURCHASED' then
+    raise exception 'wishlist item already converted';
+  end if;
+
+  if p_final_amount is null or p_final_amount <= 0 then
+    raise exception 'invalid amount';
+  end if;
+
+  insert into public.saved_items (
+    user_id, name, amount, purchase_date, purchase_url, invoice_image_path,
+    source, wishlist_item_id, count_as_monthly_expense
+  ) values (
+    v_user_id, v_wishlist.name, p_final_amount, p_purchase_date,
+    coalesce(v_wishlist.amazon_url, v_wishlist.external_url), v_wishlist.image_path,
+    'WISHLIST', v_wishlist.id, coalesce(p_count_as_expense, false)
+  ) returning id into v_saved_id;
+
+  update public.wishlist_items
+    set status = 'PURCHASED', converted_saved_item_id = v_saved_id, updated_at = now()
+    where id = p_wishlist_id;
+
+  if p_count_as_expense then
+    insert into public.expenses (user_id, description, amount, date, time, payment_method, source)
+    values (v_user_id, v_wishlist.name, p_final_amount, p_purchase_date, to_char(now(), 'HH24:MI'), 'Outro', 'SAVED_ITEM')
+    returning id into v_expense_id;
+  end if;
+
+  return query select v_saved_id, v_expense_id;
+end;
+$$;
+
+grant execute on function public.convert_wishlist_to_saved_item(uuid, numeric, date, boolean) to authenticated;
+
+-- ============================================================
+-- STORAGE-01: bucket para fotos/faturas de Guardados e Wishlist.
+-- Bucket público (leitura direta por URL); escrita/gestão só do próprio
+-- dono, através de uma pasta com o seu user_id como primeiro segmento
+-- do caminho (ex.: "<user_id>/foto.jpg").
+-- ============================================================
+insert into storage.buckets (id, name, public)
+values ('attachments', 'attachments', true)
+on conflict (id) do nothing;
+
+drop policy if exists "attachments_owner_all" on storage.objects;
+create policy "attachments_owner_all" on storage.objects
+  for all
+  using (bucket_id = 'attachments' and (storage.foldername(name))[1] = auth.uid()::text)
+  with check (bucket_id = 'attachments' and (storage.foldername(name))[1] = auth.uid()::text);
+
+drop policy if exists "attachments_public_read" on storage.objects;
+create policy "attachments_public_read" on storage.objects
+  for select
+  using (bucket_id = 'attachments');

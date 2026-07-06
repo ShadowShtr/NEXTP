@@ -41,9 +41,13 @@ export function isAmazonUrl(url: string): boolean {
 }
 
 /**
- * Converte um item da wishlist num SavedItem (Guardados > Comprados),
- * de forma transacional/segura: nunca duplica (bloqueia se já PURCHASED).
- * TASK 10 do masterplan — equivalente a WishlistRepository.convertWishlistToSavedItem.
+ * Converte um item da wishlist num SavedItem (Guardados > Comprados).
+ * WISHLIST-02: chama o RPC `convert_wishlist_to_saved_item` no Postgres, que
+ * faz o insert do saved_item + update do wishlist_item + insert opcional do
+ * expense **numa única transação** no servidor (não em 2-3 chamadas
+ * separadas do cliente). Um índice único em `saved_items.wishlist_item_id`
+ * e um `select ... for update` dentro da função impedem duplicação mesmo
+ * sob corrida (duplo toque, duas abas abertas, etc.).
  */
 export async function convertWishlistToSavedItem(params: {
   userId: string;
@@ -52,7 +56,7 @@ export async function convertWishlistToSavedItem(params: {
   purchaseDate: string;
   countAsMonthlyExpense: boolean;
 }): Promise<{ error: string | null }> {
-  const { userId, wishlist, finalAmount, purchaseDate, countAsMonthlyExpense } = params;
+  const { wishlist, finalAmount, purchaseDate, countAsMonthlyExpense } = params;
 
   if (wishlist.status === "PURCHASED") {
     return { error: "Este produto já foi marcado como comprado." };
@@ -61,47 +65,12 @@ export async function convertWishlistToSavedItem(params: {
     return { error: "Valor final inválido." };
   }
 
-  const sb = getSupabase();
-
-  const { data: savedItem, error: insertErr } = await sb
-    .from("saved_items")
-    .insert({
-      user_id: userId,
-      name: wishlist.name,
-      amount: finalAmount,
-      purchase_date: purchaseDate,
-      purchase_url: wishlist.amazon_url || wishlist.external_url || null,
-      invoice_image_path: wishlist.image_path || null,
-      source: "WISHLIST",
-      wishlist_item_id: wishlist.id,
-      count_as_monthly_expense: countAsMonthlyExpense,
-    })
-    .select("id")
-    .single();
-  if (insertErr || !savedItem) return { error: insertErr?.message ?? "Falha ao criar item guardado." };
-
-  const { error: updateErr } = await sb
-    .from("wishlist_items")
-    .update({
-      status: "PURCHASED",
-      converted_saved_item_id: savedItem.id,
-      updated_at: new Date().toISOString(),
-    })
-    .eq("id", wishlist.id)
-    .eq("status", "WISHLIST"); // guarda extra contra corrida/duplicidade
-  if (updateErr) return { error: updateErr.message };
-
-  if (countAsMonthlyExpense) {
-    await sb.from("expenses").insert({
-      user_id: userId,
-      description: wishlist.name,
-      amount: finalAmount,
-      date: purchaseDate,
-      time: new Date().toTimeString().slice(0, 5),
-      payment_method: "Outro",
-      source: "SAVED_ITEM",
-    });
-  }
-
+  const { error } = await getSupabase().rpc("convert_wishlist_to_saved_item", {
+    p_wishlist_id: wishlist.id,
+    p_final_amount: finalAmount,
+    p_purchase_date: purchaseDate,
+    p_count_as_expense: countAsMonthlyExpense,
+  });
+  if (error) return { error: error.message };
   return { error: null };
 }

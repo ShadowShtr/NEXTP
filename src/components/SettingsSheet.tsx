@@ -60,10 +60,18 @@ export default function SettingsSheet({ userId, email, onClose, onLogout }: {
   async function doImport(file: File) {
     setBusy(true); setMsg(null);
     const text = await file.text();
-    const { error, imported, skipped } = await importBackup(userId, text);
+    const report = await importBackup(userId, text);
     setBusy(false);
-    if (error) return setMsg(error);
-    setMsg(`Restauro concluído: ${imported} registos importados${skipped ? `, ${skipped} ignorados (referências não encontradas)` : ""}.`);
+    if (report.error) return setMsg(report.error);
+    const perTable = Object.entries(report.imported)
+      .filter(([, n]) => n > 0)
+      .map(([t, n]) => `${t}: ${n}`)
+      .join(" · ");
+    setMsg(
+      `Restauro concluído: ${report.totalImported} registos importados` +
+      (report.totalSkipped ? `, ${report.totalSkipped} ignorados (referências não encontradas)` : "") +
+      (perTable ? ` (${perTable})` : "")
+    );
   }
 
   return (

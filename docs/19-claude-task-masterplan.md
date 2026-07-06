@@ -4,6 +4,22 @@ Repositório alvo: `ShadowShtr/NEXTP`
 
 Este documento deve ser copiado para `docs/19-claude-task-masterplan.md`.
 
+> ## ⚠️ ATUALIZAÇÃO — o produto pivotou para web (2026-07)
+>
+> Este masterplan foi escrito originalmente para o app **Android nativo**
+> (Kotlin/Jetpack Compose/Room). O produto ativo passou a ser a **web app
+> (Next.js + Supabase + Vercel)** — ver `docs/13-web-supabase-vercel.md`. O
+> Android ficou **arquivado** em `android/` e não recebe desenvolvimento novo.
+>
+> As TASKs abaixo (0–20) foram todas executadas, **adaptadas ao stack web**:
+> onde o texto refere `.kt`, Room, DAOs ou ViewModels, a implementação real
+> equivalente está em `src/lib/*.ts` (regras de negócio), tabelas Postgres em
+> `supabase/schema.sql` (com RLS, em vez de entidades Room) e componentes
+> React em `src/components/`. Trata cada menção a Kotlin/Android abaixo como
+> **histórica** — descreve a intenção original da funcionalidade, não a
+> implementação final. Novas tasks (docs/20 em diante, ou pedidos diretos do
+> utilizador) continuam nesta mesma lógica: sempre stack web, nunca Android.
+
 ## Regra central
 
 O NextP deve seguir exatamente a direção visual das imagens de referência anexadas: claymorphism azul e branco, cards arredondados, botões grandes, ícones 3D/clay, bolinhas de checklist, mascote e sensação premium/divertida.
