@@ -59,6 +59,17 @@ TASK 5 do masterplan (`docs/19`). Testes manuais (não há suite automatizada ai
 | 26 | Duas contas diferentes | Utilizador A nunca vê dados do utilizador B (testar com 2 logins) |
 | 27 | Sessão expirada | App pede novo login sem apagar dados |
 
+## Testes automatizados (QA-01)
+
+`npm run test` (Vitest) cobre funções puras em `tests/`:
+- `format.test.ts` — `eur`, `monthBounds` (incluindo ano bissexto), `prettyDate`, `todayISO`.
+- `wishlist.test.ts` — `isValidUrl`, `isAmazonUrl` (aceita http(s), rejeita `javascript:`/lixo, nunca lança exceção).
+- `recurring.test.ts` — `installmentLabel` (parcela X/Y, limites do intervalo, plano de parcela única).
+
+`npm run typecheck` corre `tsc --noEmit`. O GitHub Actions (`.github/workflows/ci.yml`) executa `typecheck` → `test` → `build` em cada push/PR para `main`.
+
+O que ainda falta (backup, cálculos de UI, fluxos completos) continua coberto apenas pelos testes manuais abaixo — expandir os automatizados é trabalho futuro incremental, não um requisito bloqueante.
+
 ## Como testar
 
-Todos os testes acima são manuais no ambiente de produção (`https://nextp-rouge.vercel.app`) ou local (`npm run dev` + `.env.local`). Não há ainda testes automatizados (Vitest/Playwright) — ficam como trabalho futuro quando o volume de regressões justificar o investimento.
+Os testes manuais acima correm no ambiente de produção (`https://nextp-rouge.vercel.app`) ou local (`npm run dev` + `.env.local`).

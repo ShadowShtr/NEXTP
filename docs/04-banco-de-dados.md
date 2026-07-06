@@ -35,8 +35,25 @@ Conversão para `SavedItem` é transacional (ver `src/lib/wishlist.ts`): cria o 
 `id, month, year, totalExpenses, totalByCategory (JSON), totalSmallExpenses, totalRecurringPaid, totalRecurringPending, averageDailyExpense, biggestExpense, createdAt, updatedAt, closedAt?`
 Índice único `(year, month)`.
 
-### UserSettings (`user_settings`) — singleton (`id = 1`)
+### UserSettings (`user_settings`) — singleton (`user_id` é a própria chave)
 `currency, dailyReminderEnabled, dailyReminderTime, monthlyBudget?, smallExpenseLimit, backupEnabled, lastBackupAt?, theme`
+
+### IncomeEntry (`income_entries`) — INCOME-01
+`id, description, amount, date, source?, note?, createdAt, updatedAt`
+Índice: `(userId, date)`. Sem FKs — usado no Resumo para calcular **Saldo = Receitas − Gastos** do mês.
+
+### MetricEvent (`metric_events`) — ver `docs/16-metricas.md`
+`id, eventType, meta? (jsonb), createdAt`
+
+## RPC (funções no Postgres)
+
+### `convert_wishlist_to_saved_item(p_wishlist_id, p_final_amount, p_purchase_date, p_count_as_expense)`
+WISHLIST-02 — faz numa única transação: `select ... for update` (bloqueia a linha), cria o `SavedItem`, marca o `WishlistItem` como `PURCHASED`, e opcionalmente cria o `Expense` vinculado. Um índice único em `saved_items.wishlist_item_id` garante que nunca existe mais que um `SavedItem` por item da wishlist, mesmo sob corrida (duplo toque, duas abas). `src/lib/wishlist.ts` chama isto via `supabase.rpc(...)` em vez de fazer os passos em separado no cliente.
+
+## Storage (ficheiros)
+
+### Bucket `attachments` — STORAGE-01
+Público para leitura (as fotos aparecem diretamente por URL nos cards); escrita restrita à pasta do próprio utilizador (`<user_id>/ficheiro.jpg`) via RLS em `storage.objects`. Usado para fotos de Guardados/Wishlist — `src/lib/storage.ts` faz o upload e devolve o URL público, guardado em `invoice_image_path`/`image_path` (os mesmos campos que já aceitavam um link colado manualmente).
 
 ## Relações
 

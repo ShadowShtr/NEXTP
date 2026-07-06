@@ -5,9 +5,21 @@ Todas as mudanças relevantes do NextP. Formato baseado em [Keep a Changelog](ht
 ## [Unreleased]
 
 ### Fixed
-- **Documentação alinhada ao produto real**: README, `docs/13` e `docs/19` referiam Kotlin/Room/OTP de fases anteriores. Reescritos para refletir o stack ativo (Next.js + Supabase + Vercel, login email+password) — Android permanece arquivado em `android/`.
+- **Documentação alinhada ao produto real** (DOC-01): README, `docs/13` e `docs/19` referiam Kotlin/Room/OTP de fases anteriores. Reescritos para refletir o stack ativo (Next.js + Supabase + Vercel, login email+password) — Android permanece arquivado em `android/`. `docs/02`, `docs/04`, `docs/09` e `docs/17` atualizados com as funcionalidades desta auditoria.
 
 ### Added
+- **Login separado** (LOGIN-01): Entrar / Criar conta / Esqueci a password como fluxos explícitos e independentes (nunca cria conta silenciosamente após erro de login); botão "Entrar com Google" preparado (ativação do provider fica para trabalho futuro).
+- **Gastos Invisíveis configurável** (SUMMARY-01): limite deixou de ser fixo em 5€, agora lido/gravado em `user_settings.small_expense_limit`.
+- **BudgetSheet** (UI-01): orçamento mensal do card "Este mês" deixou de usar `prompt()` nativo, agora é uma bottom sheet clay com validação e opção de limpar.
+- **Ícones oficiais na navegação** (UI-02): emojis da barra inferior substituídos pelos ícones oficiais (`CategoryIcon`/`FeatureIcon`) já usados no resto da app.
+- **Conversão da wishlist via RPC** (WISHLIST-02): `convert_wishlist_to_saved_item` no Postgres faz a conversão numa única transação (`select ... for update` + índice único em `saved_items.wishlist_item_id`), eliminando a corrida entre passos que existia na versão client-side anterior.
+- **Backup preservando relações** (BACKUP-02): a importação de um backup JSON agora reconstrói um mapa `old_id → new_id` por tabela e remapeia todas as chaves estrangeiras (categoria, recorrente, ocorrência, item da wishlist) na ordem correta — nunca mais perde vínculos entre registos.
+- **Receitas e Saldo** (INCOME-01): nova tabela `income_entries` + `IncomeSheet` (CRUD); Resumo mostra total de receitas do mês e Saldo (receitas − gastos).
+- **Histórico** (HISTORY-01): novo ecrã `HistoryView` com navegação por mês, gastos agrupados por dia (expandir/colapsar), edição direta de qualquer gasto passado.
+- **Limites por categoria** (BUDGET-02): campo `monthly_limit` por categoria (já existia no schema) agora tem UI (`CategoryLimitsSheet`) e barra de progresso no Resumo com aviso aos 80% e alerta ao ultrapassar.
+- **Upload de fotos** (STORAGE-01): `PhotoField` permite colar um link **ou** anexar/tirar foto (bucket `attachments` no Supabase Storage, pasta por utilizador) em Guardados e Wishlist — sem scraping, upload sempre iniciado pelo utilizador.
+- **Central de Alertas** (NOTIF-02): `computeAlerts` calcula em tempo real contas vencidas/a vencer, garantias a expirar, categorias perto/acima do limite, Gastos Invisíveis altos e backup desatualizado; painel acessível pelo sino no cabeçalho com indicador de alertas pendentes.
+- **Testes automatizados + CI** (QA-01): Vitest cobre `format`, `wishlist` e `recurring` (14 testes); `npm run typecheck`; GitHub Actions (`.github/workflows/ci.yml`) corre typecheck → test → build em cada push/PR para `main`.
 - **Assets NextP Clay System**: SVG masters de ícones (categorias, features, payment dots, saved, system, app) e backgrounds em `assets/`, servidos em `public/icons/`. Ligados à UI web (`CategoryIcon`, `FeatureIcon`, `PaymentDot`). Masterplan em `docs/19-claude-task-masterplan.md`.
 - **Web app (Next.js + Supabase)**: 4 abas funcionais (Registos com edição, Guardados, Planeamento com checklist recorrente, Resumo com gráficos e Gastos Invisíveis), navegação com **+ central**, login email+password, deploy Vercel.
 - **Docs de qualidade**: `14-quality-system.md`, `15-security.md`, `16-metricas.md`, `17-test-plan.md`, `18-amazon-wishlist.md` — Definition of Done, regras de segurança financeira, métricas locais sem dados sensíveis, matriz de testes manuais, e especificação da wishlist Amazon.

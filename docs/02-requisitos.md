@@ -34,11 +34,24 @@
 ### Resumo
 - Estatísticas diárias, semanais e mensais; comparação com mês anterior.
 - Gráficos por dia, categoria, evolução mensal, forma de pagamento, recorrentes pagos x pendentes.
-- Gastos Invisíveis.
+- Gastos Invisíveis, com limite **configurável** (Configurações → limite de gasto pequeno).
+- **Receitas e Saldo** (INCOME-01): total de receitas do mês e saldo (receitas − gastos), com atalho para lançar nova receita.
+- **Limites por categoria** (BUDGET-02): barra de progresso por categoria com limite definido, aviso aos 80% e alerta ao ultrapassar.
+- **Histórico** (HISTORY-01): ecrã dedicado com filtro por mês, gastos agrupados por dia (subtotal diário), expandir dia para ver/editar cada gasto.
+
+### Guardados/Wishlist — foto do produto
+- Colar link de uma imagem **ou** anexar/tirar foto (upload para Supabase Storage, bucket privado por utilizador) — mostrada no card em vez do ícone genérico.
+
+### Central de Alertas
+- Painel (ícone de sino no cabeçalho, com indicador quando há alertas) com: conta recorrente/planeamento vencida ou a vencer hoje, garantia a expirar, categoria perto/acima do limite, Gastos Invisíveis altos, backup desatualizado.
+
+### Autenticação
+- Entrar / Criar conta / Esqueci a password como fluxos separados e explícitos (nunca criar conta silenciosamente após um erro de login).
+- Botão "Entrar com Google" preparado (ativação do provider no Supabase é trabalho futuro).
 
 ### Transversais
-- Notificações configuráveis.
-- Backup/restauro Google (opcional).
+- Central de Alertas dentro da app (ver acima) — notificações push automáticas continuam como trabalho futuro (ver `docs/07-notificacoes.md`).
+- Backup/restauro manual em JSON, preservando relações entre tabelas (BACKUP-02).
 - Tema claro/escuro; configuração de moeda, limites e categorias.
 
 ## Requisitos não funcionais
