@@ -7,6 +7,7 @@ export async function computeStreak(userId: string): Promise<number> {
     .from("expenses")
     .select("date")
     .eq("user_id", userId)
+    .is("deleted_at", null)
     .order("date", { ascending: false })
     .limit(400);
   if (!data || data.length === 0) return 0;

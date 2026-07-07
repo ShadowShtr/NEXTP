@@ -7,6 +7,8 @@ import { FeatureIcon } from "@/lib/icons";
 import { useLockBodyScroll } from "@/lib/useLockBodyScroll";
 import CategoryLimitsSheet from "@/components/CategoryLimitsSheet";
 import WalletsSheet from "@/components/WalletsSheet";
+import TrashSheet from "@/components/TrashSheet";
+import ActivityLogSheet from "@/components/ActivityLogSheet";
 
 type Settings = {
   daily_reminder_enabled: boolean;
@@ -27,6 +29,8 @@ export default function SettingsSheet({ userId, email, onClose, onLogout }: {
   const [notifPermission, setNotifPermission] = useState<NotificationPermission | null>(null);
   const [limitsOpen, setLimitsOpen] = useState(false);
   const [walletsOpen, setWalletsOpen] = useState(false);
+  const [trashOpen, setTrashOpen] = useState(false);
+  const [activityOpen, setActivityOpen] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -157,9 +161,21 @@ export default function SettingsSheet({ userId, email, onClose, onLogout }: {
           Carteiras
         </button>
 
+        {/* SAFETY-03 */}
+        <button onClick={() => setTrashOpen(true)} className="clay-btn-ghost w-full text-sm py-2.5">
+          Lixeira
+        </button>
+
+        {/* SAFETY-02 */}
+        <button onClick={() => setActivityOpen(true)} className="clay-btn-ghost w-full text-sm py-2.5">
+          Histórico de alterações
+        </button>
+
         <button onClick={onLogout} className="w-full text-nextp-danger font-bold py-2">Sair da conta</button>
         {limitsOpen && <CategoryLimitsSheet userId={userId} onClose={() => setLimitsOpen(false)} />}
         {walletsOpen && <WalletsSheet userId={userId} onClose={() => setWalletsOpen(false)} />}
+        {trashOpen && <TrashSheet userId={userId} onClose={() => setTrashOpen(false)} />}
+        {activityOpen && <ActivityLogSheet userId={userId} onClose={() => setActivityOpen(false)} />}
       </div>
     </div>
   );

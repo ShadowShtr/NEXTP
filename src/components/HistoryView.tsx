@@ -29,7 +29,7 @@ export default function HistoryView({ userId, onClose }: { userId: string; onClo
     const { start, end } = monthBounds(monthKey);
     const sb = getSupabase();
     const [ex, ct] = await Promise.all([
-      sb.from("expenses").select("*").eq("user_id", userId)
+      sb.from("expenses").select("*").eq("user_id", userId).is("deleted_at", null)
         .gte("date", start).lte("date", end)
         .order("date", { ascending: false }).order("time", { ascending: false }),
       sb.from("categories").select("*").eq("user_id", userId),

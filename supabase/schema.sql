@@ -63,6 +63,9 @@ create unique index if not exists expenses_user_idempotency_uq
   on public.expenses(user_id, idempotency_key) where idempotency_key is not null;
 -- FINANCE-12 — de que carteira saiu o dinheiro (opcional; null = sem carteira definida).
 alter table public.expenses add column if not exists wallet_account_id uuid references public.wallet_accounts(id) on delete set null;
+-- SAFETY-03 — apagar nunca é definitivo: fica marcado e visível na Lixeira até ser restaurado.
+alter table public.expenses add column if not exists deleted_at timestamptz;
+create index if not exists expenses_user_deleted_idx on public.expenses(user_id, deleted_at);
 
 -- ---------- SAVED ITEMS (Guardados > Comprados) ----------
 create table if not exists public.saved_items (
@@ -87,6 +90,8 @@ create table if not exists public.saved_items (
 alter table public.saved_items add column if not exists purchase_url text;
 alter table public.saved_items add column if not exists source text not null default 'MANUAL';
 alter table public.saved_items add column if not exists wishlist_item_id uuid;
+-- SAFETY-03 — soft delete (ver nota em expenses).
+alter table public.saved_items add column if not exists deleted_at timestamptz;
 
 -- ---------- WISHLIST ITEMS (Guardados > Quero comprar) ----------
 -- Ver docs/18-amazon-wishlist.md. Fase 1: sem scraping, link colado manualmente.
@@ -113,6 +118,8 @@ create index if not exists wishlist_user_status_idx on public.wishlist_items(use
 create index if not exists wishlist_user_priority_idx on public.wishlist_items(user_id, priority);
 create index if not exists wishlist_user_category_idx on public.wishlist_items(user_id, category_id);
 create index if not exists wishlist_user_desired_date_idx on public.wishlist_items(user_id, desired_date);
+-- SAFETY-03 — soft delete (ver nota em expenses).
+alter table public.wishlist_items add column if not exists deleted_at timestamptz;
 
 -- ---------- PLANNING ITEMS ----------
 create table if not exists public.planning_items (
@@ -130,6 +137,8 @@ create table if not exists public.planning_items (
   created_at       timestamptz not null default now(),
   updated_at       timestamptz not null default now()
 );
+-- SAFETY-03 — soft delete (ver nota em expenses).
+alter table public.planning_items add column if not exists deleted_at timestamptz;
 
 -- ---------- RECURRING PAYMENTS (template) ----------
 create table if not exists public.recurring_payments (
@@ -206,6 +215,8 @@ create unique index if not exists income_user_idempotency_uq
   on public.income_entries(user_id, idempotency_key) where idempotency_key is not null;
 -- FINANCE-12 — em que carteira entrou o dinheiro (opcional; null = sem carteira definida).
 alter table public.income_entries add column if not exists wallet_account_id uuid references public.wallet_accounts(id) on delete set null;
+-- SAFETY-03 — soft delete (ver nota em expenses).
+alter table public.income_entries add column if not exists deleted_at timestamptz;
 
 -- ---------- METRIC EVENTS (ver docs/16-metricas.md) ----------
 create table if not exists public.metric_events (
@@ -237,6 +248,19 @@ create table if not exists public.monthly_closings (
   unique (user_id, year, month)
 );
 
+-- ---------- ACTIVITY LOG (Histórico de alterações, SAFETY-02) ----------
+create table if not exists public.activity_log (
+  id          uuid primary key default gen_random_uuid(),
+  user_id     uuid not null references auth.users(id) on delete cascade,
+  entity_type text not null,
+  entity_id   uuid,
+  action      text not null,
+  description text not null,
+  amount      numeric,
+  created_at  timestamptz not null default now()
+);
+create index if not exists activity_log_user_created_idx on public.activity_log(user_id, created_at desc);
+
 -- ============================================================
 -- RLS: cada utilizador só acede às suas linhas.
 -- ============================================================
@@ -252,6 +276,7 @@ alter table public.metric_events          enable row level security;
 alter table public.income_entries         enable row level security;
 alter table public.monthly_closings       enable row level security;
 alter table public.wallet_accounts        enable row level security;
+alter table public.activity_log           enable row level security;
 
 do $$
 declare t text;
@@ -259,7 +284,7 @@ begin
   foreach t in array array[
     'categories','expenses','saved_items','wishlist_items','planning_items',
     'recurring_payments','recurring_occurrences','user_settings','metric_events',
-    'income_entries','monthly_closings','wallet_accounts'
+    'income_entries','monthly_closings','wallet_accounts','activity_log'
   ]
   loop
     execute format('drop policy if exists "own_all" on public.%I;', t);

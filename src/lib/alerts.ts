@@ -26,12 +26,12 @@ export async function computeAlerts(userId: string): Promise<AppAlert[]> {
       .eq("user_id", userId).eq("year", now.getFullYear()).eq("month", now.getMonth() + 1)
       .in("status", ["PENDING", "OVERDUE", "PARTIAL"]),
     sb.from("planning_items").select("id,name,due_date,status,total_amount")
-      .eq("user_id", userId).not("status", "in", "(PAID,CANCELLED)").not("due_date", "is", null),
-    sb.from("saved_items").select("id,name,warranty_until").eq("user_id", userId).not("warranty_until", "is", null),
+      .eq("user_id", userId).is("deleted_at", null).not("status", "in", "(PAID,CANCELLED)").not("due_date", "is", null),
+    sb.from("saved_items").select("id,name,warranty_until").eq("user_id", userId).is("deleted_at", null).not("warranty_until", "is", null),
     sb.from("categories").select("id,name,monthly_limit").eq("user_id", userId).not("monthly_limit", "is", null),
-    sb.from("expenses").select("amount,category_id").eq("user_id", userId).gte("date", start).lte("date", end),
+    sb.from("expenses").select("amount,category_id").eq("user_id", userId).is("deleted_at", null).gte("date", start).lte("date", end),
     sb.from("user_settings").select("small_expense_limit,last_backup_at").eq("user_id", userId).maybeSingle(),
-    sb.from("income_entries").select("id").eq("user_id", userId).gte("date", start).lte("date", end).limit(1),
+    sb.from("income_entries").select("id").eq("user_id", userId).is("deleted_at", null).gte("date", start).lte("date", end).limit(1),
     getMonthlyFinance(userId, now.getFullYear(), now.getMonth() + 1),
   ]);
 

@@ -7,6 +7,8 @@ import { CategoryIcon, PaymentDot, type DotState } from "@/lib/icons";
 import { ensureOccurrences, installmentLabel, togglePaid, type Occurrence, type RecurringPayment } from "@/lib/recurring";
 import RecurringDetailSheet from "@/components/RecurringDetailSheet";
 import { useLockBodyScroll } from "@/lib/useLockBodyScroll";
+import { softDelete } from "@/lib/trash";
+import { logActivity } from "@/lib/activityLog";
 
 const MONTHS = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
 
@@ -62,7 +64,7 @@ export default function PlanningTab({ userId, autoOpen, autoOpenToken }: Props) 
     const [p, o, f] = await Promise.all([
       sb.from("recurring_payments").select("id,name,amount,due_day,category_id,repeat_type,is_active,start_date,end_date").eq("user_id", userId).eq("is_active", true),
       sb.from("recurring_occurrences").select("*").eq("user_id", userId).eq("year", year).eq("month", month),
-      sb.from("planning_items").select("*").eq("user_id", userId).neq("type", "RECURRING").order("due_date"),
+      sb.from("planning_items").select("*").eq("user_id", userId).is("deleted_at", null).neq("type", "RECURRING").order("due_date"),
     ]);
     setPayments((p.data ?? []) as RecurringPayment[]);
     setOcc((o.data ?? []) as Occurrence[]);
@@ -320,6 +322,7 @@ function RecurringSheet({ userId, editing, onClose, onSaved }: { userId: string;
         .eq("id", editing!.id);
       setSaving(false);
       if (error) return setErr(error.message);
+      logActivity(userId, "recurring_payment", "UPDATED", name.trim(), value, editing!.id);
       return onSaved();
     }
 
@@ -336,6 +339,7 @@ function RecurringSheet({ userId, editing, onClose, onSaved }: { userId: string;
     });
     setSaving(false);
     if (error) return setErr(error.message);
+    logActivity(userId, "recurring_payment", "CREATED", name.trim(), value);
     onSaved();
   }
 
@@ -345,6 +349,7 @@ function RecurringSheet({ userId, editing, onClose, onSaved }: { userId: string;
     const { error } = await getSupabase().from("recurring_payments").update({ is_active: false }).eq("id", editing.id);
     setSaving(false);
     if (error) return setErr(error.message);
+    logActivity(userId, "recurring_payment", "DELETED", editing.name, Number(editing.amount), editing.id);
     onSaved();
   }
 
@@ -411,15 +416,17 @@ function PlanSheet({ userId, defaultType, editing, onClose, onSaved }: {
       : await getSupabase().from("planning_items").insert({ ...payload, user_id: userId });
     setSaving(false);
     if (error) return setErr(error.message);
+    logActivity(userId, "planning_item", isEdit ? "UPDATED" : "CREATED", name.trim(), value, editing?.id);
     onSaved();
   }
 
   async function remove() {
-    if (!editing || !confirm("Apagar este item?")) return;
+    if (!editing || !confirm("Apagar este item? Fica na Lixeira e pode ser restaurado.")) return;
     setSaving(true);
-    const { error } = await getSupabase().from("planning_items").delete().eq("id", editing.id);
+    const { error } = await softDelete(userId, "planning_items", editing.id);
     setSaving(false);
-    if (error) return setErr(error.message);
+    if (error) return setErr(error);
+    logActivity(userId, "planning_item", "DELETED", editing.name, Number(editing.total_amount), editing.id);
     onSaved();
   }
 

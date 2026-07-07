@@ -5,6 +5,9 @@ import { getSupabase } from "@/lib/supabase";
 import { todayISO } from "@/lib/format";
 import { useLockBodyScroll } from "@/lib/useLockBodyScroll";
 import { defaultWalletId, listWallets, WALLET_TYPE_LABEL, type WalletAccount } from "@/lib/wallets";
+import { softDelete } from "@/lib/trash";
+import { logActivity } from "@/lib/activityLog";
+import { isMonthClosed } from "@/lib/monthlyClosing";
 
 export type IncomeEntry = {
   id: string;
@@ -30,6 +33,7 @@ export default function IncomeSheet({
   const [walletId, setWalletId] = useState<string | null>(editing?.wallet_account_id ?? null);
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [closedMonthWarning, setClosedMonthWarning] = useState(false);
   // SAFETY-01 — evita duplicar a receita num duplo-toque ou reenvio de rede.
   const [idempotencyKey] = useState(() => crypto.randomUUID());
 
@@ -38,6 +42,8 @@ export default function IncomeSheet({
       setWallets(ws);
       if (!isEdit) defaultWalletId(userId).then((id) => id && setWalletId(id));
     });
+    // FINANCE-15 — avisa (não bloqueia) se esta receita pertence a um mês já fechado.
+    if (isEdit && editing) isMonthClosed(userId, editing.date).then(setClosedMonthWarning);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -55,15 +61,17 @@ export default function IncomeSheet({
       : await getSupabase().from("income_entries").insert({ ...payload, user_id: userId, idempotency_key: idempotencyKey });
     setSaving(false);
     if (error && error.code !== "23505") return setErr(error.message);
+    logActivity(userId, "income", isEdit ? "UPDATED" : "CREATED", payload.description, value, editing?.id);
     onSaved();
   }
 
   async function remove() {
-    if (!editing || !confirm("Apagar esta receita?")) return;
+    if (!editing || !confirm("Apagar esta receita? Fica na Lixeira e pode ser restaurada.")) return;
     setSaving(true);
-    const { error } = await getSupabase().from("income_entries").delete().eq("id", editing.id);
+    const { error } = await softDelete(userId, "income_entries", editing.id);
     setSaving(false);
-    if (error) return setErr(error.message);
+    if (error) return setErr(error);
+    logActivity(userId, "income", "DELETED", editing.description, Number(editing.amount), editing.id);
     onSaved();
   }
 
@@ -75,6 +83,12 @@ export default function IncomeSheet({
           <h2 className="text-xl font-black">{isEdit ? "Editar receita" : "Nova receita"}</h2>
           <button onClick={onClose} className="text-nextp-muted font-bold">Fechar</button>
         </div>
+
+        {closedMonthWarning && (
+          <p className="clay-chip bg-nextp-warning/15 text-nextp-warning text-xs text-center py-2">
+            Esta receita é de um mês já fechado — alterar aqui muda os totais registados, mas não atualiza o fechamento guardado.
+          </p>
+        )}
 
         <div className="clay-card bg-nextp-success">
           <input

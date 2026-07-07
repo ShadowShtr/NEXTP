@@ -7,6 +7,8 @@ import { convertWishlistToSavedItem, isAmazonUrl, isValidUrl, type WishlistItem,
 import { logMetric } from "@/lib/metrics";
 import { useLockBodyScroll } from "@/lib/useLockBodyScroll";
 import PhotoField from "@/components/PhotoField";
+import { softDelete } from "@/lib/trash";
+import { logActivity } from "@/lib/activityLog";
 
 type SavedItem = {
   id: string;
@@ -38,8 +40,8 @@ export default function SavedTab({ userId, autoOpen, autoOpenToken }: Props) {
   const load = useCallback(async () => {
     const sb = getSupabase();
     const [p, w] = await Promise.all([
-      sb.from("saved_items").select("*").eq("user_id", userId).order("purchase_date", { ascending: false }),
-      sb.from("wishlist_items").select("*").eq("user_id", userId).order("created_at", { ascending: false }),
+      sb.from("saved_items").select("*").eq("user_id", userId).is("deleted_at", null).order("purchase_date", { ascending: false }),
+      sb.from("wishlist_items").select("*").eq("user_id", userId).is("deleted_at", null).order("created_at", { ascending: false }),
     ]);
     setItems((p.data ?? []) as SavedItem[]);
     setWish((w.data ?? []) as WishlistItem[]);
@@ -61,11 +63,11 @@ export default function SavedTab({ userId, autoOpen, autoOpenToken }: Props) {
   const wishOpen = wish.filter((w) => w.status === "WISHLIST");
 
   async function removeItem(id: string) {
-    await getSupabase().from("saved_items").delete().eq("id", id);
+    await softDelete(userId, "saved_items", id);
     load();
   }
   async function removeWish(id: string) {
-    await getSupabase().from("wishlist_items").delete().eq("id", id);
+    await softDelete(userId, "wishlist_items", id);
     load();
   }
 
@@ -271,6 +273,7 @@ function SavedSheet({ userId, editing, onClose, onSaved }: { userId: string; edi
       const { error } = await getSupabase().from("saved_items").update(payload).eq("id", editing!.id);
       setSaving(false);
       if (error) return setErr(error.message);
+      logActivity(userId, "saved_item", "UPDATED", name.trim(), value, editing!.id);
       return onSaved();
     }
     const { data, error } = await getSupabase().from("saved_items").insert({
@@ -288,15 +291,17 @@ function SavedSheet({ userId, editing, onClose, onSaved }: { userId: string; edi
     setSaving(false);
     if (error) return setErr(error.message);
     logMetric(userId, "SAVED_ITEM_CREATED");
+    logActivity(userId, "saved_item", "CREATED", name.trim(), value, data?.id);
     onSaved();
   }
 
   async function remove() {
-    if (!editing || !confirm("Apagar este item?")) return;
+    if (!editing || !confirm("Apagar este item? Fica na Lixeira e pode ser restaurado.")) return;
     setSaving(true);
-    const { error } = await getSupabase().from("saved_items").delete().eq("id", editing.id);
+    const { error } = await softDelete(userId, "saved_items", editing.id);
     setSaving(false);
-    if (error) return setErr(error.message);
+    if (error) return setErr(error);
+    logActivity(userId, "saved_item", "DELETED", editing.name, Number(editing.amount), editing.id);
     onSaved();
   }
 
@@ -365,15 +370,17 @@ function WishlistSheet({ userId, editing, onClose, onSaved }: { userId: string; 
     setSaving(false);
     if (error) return setErr(error.message);
     if (!isEdit) logMetric(userId, "WISHLIST_ITEM_CREATED");
+    logActivity(userId, "wishlist_item", isEdit ? "UPDATED" : "CREATED", name.trim(), payload.expected_amount, editing?.id);
     onSaved();
   }
 
   async function remove() {
-    if (!editing || !confirm("Apagar este produto?")) return;
+    if (!editing || !confirm("Apagar este produto? Fica na Lixeira e pode ser restaurado.")) return;
     setSaving(true);
-    const { error } = await getSupabase().from("wishlist_items").delete().eq("id", editing.id);
+    const { error } = await softDelete(userId, "wishlist_items", editing.id);
     setSaving(false);
-    if (error) return setErr(error.message);
+    if (error) return setErr(error);
+    logActivity(userId, "wishlist_item", "DELETED", editing.name, editing.expected_amount ?? editing.target_amount ?? null, editing.id);
     onSaved();
   }
 
@@ -425,6 +432,7 @@ function ConvertSheet({ userId, item, onClose, onDone }: { userId: string; item:
     setSaving(false);
     if (error) return setErr(error);
     logMetric(userId, "WISHLIST_CONVERTED_TO_PURCHASED");
+    logActivity(userId, "wishlist_item", "CONVERTED", item.name, value, item.id);
     onDone();
   }
 

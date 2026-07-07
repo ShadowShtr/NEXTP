@@ -1,11 +1,15 @@
 import { getSupabase } from "@/lib/supabase";
 import { logMetric } from "@/lib/metrics";
+import { logActivity } from "@/lib/activityLog";
 
 const TABLES = [
   "categories", "expenses", "saved_items", "wishlist_items",
   "planning_items", "recurring_payments", "recurring_occurrences",
   "income_entries", "user_settings",
 ] as const;
+
+// SAFETY-03 — estas tabelas têm `deleted_at`; o backup é sempre dos dados "ativos" (a Lixeira não é exportada).
+const SOFT_DELETE_TABLES = new Set(["expenses", "income_entries", "saved_items", "wishlist_items", "planning_items"]);
 
 /**
  * Exporta todos os dados do utilizador em JSON e dispara o download no browser.
@@ -20,7 +24,9 @@ export async function exportBackup(userId: string): Promise<{ error: string | nu
   };
 
   for (const table of TABLES) {
-    const { data, error } = await sb.from(table).select("*").eq("user_id", userId);
+    let query = sb.from(table).select("*").eq("user_id", userId);
+    if (SOFT_DELETE_TABLES.has(table)) query = query.is("deleted_at", null);
+    const { data, error } = await query;
     if (error) {
       logMetric(userId, "BACKUP_FAILED");
       return { error: `Falha ao exportar ${table}: ${error.message}` };
@@ -40,6 +46,7 @@ export async function exportBackup(userId: string): Promise<{ error: string | nu
 
   await sb.from("user_settings").upsert({ user_id: userId, last_backup_at: new Date().toISOString() }, { onConflict: "user_id" }).select();
   logMetric(userId, "BACKUP_SUCCESS");
+  logActivity(userId, "backup", "EXPORTED", "Backup exportado (JSON)");
   return { error: null };
 }
 
@@ -157,5 +164,6 @@ export async function importBackup(userId: string, jsonText: string): Promise<Im
 
   const totalImported = Object.values(imported).reduce((s, n) => s + n, 0);
   const totalSkipped = Object.values(skipped).reduce((s, n) => s + n, 0);
+  logActivity(userId, "backup", "IMPORTED", `Backup restaurado (${totalImported} registos)`);
   return { error: null, imported, skipped, totalImported, totalSkipped };
 }

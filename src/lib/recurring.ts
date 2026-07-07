@@ -1,5 +1,6 @@
 import { getSupabase } from "@/lib/supabase";
 import { logMetric } from "@/lib/metrics";
+import { logActivity } from "@/lib/activityLog";
 
 export type RecurringPayment = {
   id: string;
@@ -168,6 +169,7 @@ export async function setPaidStatus(params: {
       .eq("id", occ.id);
     if (error) return { error: error.message };
     logMetric(userId, "RECURRING_PAYMENT_MARKED_PAID");
+    logActivity(userId, "recurring_occurrence", "MARKED_PAID", paymentName, Number(occ.expected_amount), occ.id);
     return { error: null };
   }
 
@@ -179,11 +181,12 @@ export async function setPaidStatus(params: {
     .from("recurring_occurrences")
     .update({ status: "PENDING", paid_amount: 0, paid_at: null, created_expense_id: null, updated_at: new Date().toISOString() })
     .eq("id", occ.id);
+  if (!error) logActivity(userId, "recurring_occurrence", "MARKED_PENDING", paymentName, Number(occ.expected_amount), occ.id);
   return { error: error?.message ?? null };
 }
 
 /** Marca pagamento parcial (guarda o valor efetivamente pago). */
-export async function markPartial(userId: string, occ: Occurrence, partialAmount: number): Promise<{ error: string | null }> {
+export async function markPartial(userId: string, occ: Occurrence, partialAmount: number, paymentName: string): Promise<{ error: string | null }> {
   const { error } = await getSupabase()
     .from("recurring_occurrences")
     .update({
@@ -193,7 +196,10 @@ export async function markPartial(userId: string, occ: Occurrence, partialAmount
       updated_at: new Date().toISOString(),
     })
     .eq("id", occ.id);
-  if (!error) logMetric(userId, "RECURRING_PAYMENT_MARKED_PARTIAL");
+  if (!error) {
+    logMetric(userId, "RECURRING_PAYMENT_MARKED_PARTIAL");
+    logActivity(userId, "recurring_occurrence", "MARKED_PAID", `${paymentName} (parcial)`, partialAmount, occ.id);
+  }
   return { error: error?.message ?? null };
 }
 

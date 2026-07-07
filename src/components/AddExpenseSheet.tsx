@@ -8,6 +8,9 @@ import { CategoryIcon } from "@/lib/icons";
 import { logMetric } from "@/lib/metrics";
 import { useLockBodyScroll } from "@/lib/useLockBodyScroll";
 import { defaultWalletId, listWallets, WALLET_TYPE_LABEL, type WalletAccount } from "@/lib/wallets";
+import { softDelete } from "@/lib/trash";
+import { logActivity } from "@/lib/activityLog";
+import { isMonthClosed } from "@/lib/monthlyClosing";
 
 type Props = {
   onClose: () => void;
@@ -36,6 +39,7 @@ export default function AddExpenseSheet({
   const [saving, setSaving] = useState(false);
   const [ok, setOk] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [closedMonthWarning, setClosedMonthWarning] = useState(false);
   // SAFETY-01 — mesma chave em toda a vida desta folha: um duplo-toque ou reenvio de rede
   // acerta o índice único e não cria um segundo gasto.
   const [idempotencyKey] = useState(() => crypto.randomUUID());
@@ -46,6 +50,8 @@ export default function AddExpenseSheet({
       setWallets(ws);
       if (!isEdit) defaultWalletId(userId).then((id) => id && setWalletId(id));
     });
+    // FINANCE-15 — avisa (não bloqueia) se este gasto pertence a um mês já fechado.
+    if (isEdit && editing) isMonthClosed(userId, editing.date).then(setClosedMonthWarning);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -71,18 +77,20 @@ export default function AddExpenseSheet({
     setSaving(false);
     if (error && error.code !== "23505") return setErr(error.message);
     logMetric(userId, isEdit ? "EXPENSE_UPDATED" : "EXPENSE_CREATED");
+    logActivity(userId, "expense", isEdit ? "UPDATED" : "CREATED", payload.description, value, editing?.id);
     setOk(true);
     setTimeout(onSaved, 400);
   }
 
   async function remove() {
     if (!editing) return;
-    if (!confirm("Apagar este gasto?")) return;
+    if (!confirm("Apagar este gasto? Fica na Lixeira e pode ser restaurado.")) return;
     setSaving(true);
-    const { error } = await getSupabase().from("expenses").delete().eq("id", editing.id);
+    const { error } = await softDelete(userId, "expenses", editing.id);
     setSaving(false);
-    if (error) return setErr(error.message);
+    if (error) return setErr(error);
     logMetric(userId, "EXPENSE_DELETED");
+    logActivity(userId, "expense", "DELETED", editing.description, Number(editing.amount), editing.id);
     onSaved();
   }
 
@@ -101,6 +109,12 @@ export default function AddExpenseSheet({
               <h2 className="text-xl font-black">{isEdit ? "Editar gasto" : "Novo gasto"}</h2>
               <button onClick={onClose} className="text-nextp-muted font-bold">Fechar</button>
             </div>
+
+            {closedMonthWarning && (
+              <p className="clay-chip bg-nextp-warning/15 text-nextp-warning text-xs text-center py-2">
+                Este gasto é de um mês já fechado — alterar aqui muda os totais registados, mas não atualiza o fechamento guardado.
+              </p>
+            )}
 
             {/* Valor em destaque (card azul) */}
             <div className="clay-card bg-nextp-blue">

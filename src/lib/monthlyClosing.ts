@@ -2,6 +2,7 @@ import { getSupabase } from "@/lib/supabase";
 import { getMonthlyFinance } from "@/lib/finance";
 import { monthBounds } from "@/lib/format";
 import { logMetric } from "@/lib/metrics";
+import { logActivity } from "@/lib/activityLog";
 
 export type MonthlyClosing = {
   id: string;
@@ -25,7 +26,7 @@ async function expenseBreakdownOf(userId: string, year: number, month: number): 
   const dateISO = `${year}-${String(month).padStart(2, "0")}-01`;
   const { start, end } = monthBounds(dateISO);
   const [exp, cats, settings] = await Promise.all([
-    sb.from("expenses").select("amount,category_id").eq("user_id", userId).gte("date", start).lte("date", end),
+    sb.from("expenses").select("amount,category_id").eq("user_id", userId).is("deleted_at", null).gte("date", start).lte("date", end),
     sb.from("categories").select("id,name").eq("user_id", userId),
     sb.from("user_settings").select("small_expense_limit").eq("user_id", userId).maybeSingle(),
   ]);
@@ -65,7 +66,10 @@ export async function closeMonth(userId: string, year: number, month: number): P
     closed_at: new Date().toISOString(),
     reopened_at: null,
   }, { onConflict: "user_id,year,month" });
-  if (!error) logMetric(userId, "MONTH_CLOSED");
+  if (!error) {
+    logMetric(userId, "MONTH_CLOSED");
+    logActivity(userId, "month", "CLOSED", `${month}/${year}`, finance.currentBalance);
+  }
   return { error: error?.message ?? null };
 }
 
@@ -74,7 +78,10 @@ export async function reopenMonth(userId: string, year: number, month: number): 
   const { error } = await getSupabase().from("monthly_closings")
     .update({ reopened_at: new Date().toISOString() })
     .eq("user_id", userId).eq("year", year).eq("month", month);
-  if (!error) logMetric(userId, "MONTH_REOPENED");
+  if (!error) {
+    logMetric(userId, "MONTH_REOPENED");
+    logActivity(userId, "month", "REOPENED", `${month}/${year}`);
+  }
   return { error: error?.message ?? null };
 }
 
@@ -88,4 +95,11 @@ export async function listClosings(userId: string): Promise<MonthlyClosing[]> {
   const { data } = await getSupabase().from("monthly_closings").select("*")
     .eq("user_id", userId).order("year", { ascending: false }).order("month", { ascending: false });
   return (data ?? []) as MonthlyClosing[];
+}
+
+/** FINANCE-15 — usado para avisar (não bloquear) quando se edita um gasto/receita de um mês já fechado. */
+export async function isMonthClosed(userId: string, dateISO: string): Promise<boolean> {
+  const [year, month] = dateISO.split("-").map(Number);
+  const closing = await getClosing(userId, year, month);
+  return !!closing && !closing.reopened_at;
 }

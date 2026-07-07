@@ -47,13 +47,13 @@ export default function SummaryTab({ userId }: { userId: string }) {
     const { start: prevStartB, end: prevEnd } = monthBounds(prevStart);
     const sb = getSupabase();
     const [ex, ct, prev, occ, settings, inc] = await Promise.all([
-      sb.from("expenses").select("amount,date,category_id").eq("user_id", userId).gte("date", start).lte("date", end),
+      sb.from("expenses").select("amount,date,category_id").eq("user_id", userId).is("deleted_at", null).gte("date", start).lte("date", end),
       sb.from("categories").select("id,name,color,monthly_limit").eq("user_id", userId),
-      sb.from("expenses").select("amount").eq("user_id", userId).gte("date", prevStartB).lte("date", prevEnd),
+      sb.from("expenses").select("amount").eq("user_id", userId).is("deleted_at", null).gte("date", prevStartB).lte("date", prevEnd),
       sb.from("recurring_occurrences").select("status,expected_amount,paid_amount")
         .eq("user_id", userId).eq("year", now.getFullYear()).eq("month", now.getMonth() + 1),
       sb.from("user_settings").select("small_expense_limit").eq("user_id", userId).maybeSingle(),
-      sb.from("income_entries").select("*").eq("user_id", userId).gte("date", start).lte("date", end).order("date", { ascending: false }),
+      sb.from("income_entries").select("*").eq("user_id", userId).is("deleted_at", null).gte("date", start).lte("date", end).order("date", { ascending: false }),
     ]);
     setRows((ex.data ?? []) as Row[]);
     setCats((ct.data ?? []) as Cat[]);

@@ -57,7 +57,7 @@ export default function RecurringDetailSheet({ userId, payment, occurrence, onCl
     const v = parseFloat(partialValue.replace(",", "."));
     if (!v || v <= 0) return setErr("Valor inválido.");
     setBusy(true);
-    const { error } = await markPartial(userId, occ, v);
+    const { error } = await markPartial(userId, occ, v, payment.name);
     setBusy(false);
     if (error) return setErr(error);
     setOcc({ ...occ, status: "PARTIAL", paid_amount: v });

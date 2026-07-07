@@ -31,8 +31,8 @@ export default function RecordsTab({ userId, categories, onEdit, onQuickAdd }: P
     const { start, end } = monthBounds(today);
     const now = new Date();
     const [day, month, settings, f] = await Promise.all([
-      sb.from("expenses").select("*").eq("user_id", userId).eq("date", today).order("time", { ascending: false }),
-      sb.from("expenses").select("amount").eq("user_id", userId).gte("date", start).lte("date", end),
+      sb.from("expenses").select("*").eq("user_id", userId).is("deleted_at", null).eq("date", today).order("time", { ascending: false }),
+      sb.from("expenses").select("amount").eq("user_id", userId).is("deleted_at", null).gte("date", start).lte("date", end),
       sb.from("user_settings").select("monthly_budget").eq("user_id", userId).maybeSingle(),
       getMonthlyFinance(userId, now.getFullYear(), now.getMonth() + 1),
     ]);

@@ -32,8 +32,8 @@ export async function getWalletBalances(userId: string): Promise<WalletBalance[]
   const sb = getSupabase();
   const [wallets, income, expenses] = await Promise.all([
     listWallets(userId),
-    sb.from("income_entries").select("amount,wallet_account_id").eq("user_id", userId).not("wallet_account_id", "is", null),
-    sb.from("expenses").select("amount,wallet_account_id").eq("user_id", userId).not("wallet_account_id", "is", null),
+    sb.from("income_entries").select("amount,wallet_account_id").eq("user_id", userId).is("deleted_at", null).not("wallet_account_id", "is", null),
+    sb.from("expenses").select("amount,wallet_account_id").eq("user_id", userId).is("deleted_at", null).not("wallet_account_id", "is", null),
   ]);
   const net = new Map<string, number>();
   for (const i of income.data ?? []) {

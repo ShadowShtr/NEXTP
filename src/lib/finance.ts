@@ -98,8 +98,8 @@ export async function getMonthlyFinance(userId: string, year: number, month: num
   const dateISO = `${year}-${String(month).padStart(2, "0")}-01`;
   const { start, end } = monthBounds(dateISO);
   const [inc, exp, occ, settings] = await Promise.all([
-    sb.from("income_entries").select("amount").eq("user_id", userId).gte("date", start).lte("date", end),
-    sb.from("expenses").select("amount,source").eq("user_id", userId).gte("date", start).lte("date", end),
+    sb.from("income_entries").select("amount").eq("user_id", userId).is("deleted_at", null).gte("date", start).lte("date", end),
+    sb.from("expenses").select("amount,source").eq("user_id", userId).is("deleted_at", null).gte("date", start).lte("date", end),
     sb.from("recurring_occurrences").select("status,expected_amount,paid_amount").eq("user_id", userId).eq("year", year).eq("month", month),
     sb.from("user_settings").select("reserved_amount").eq("user_id", userId).maybeSingle(),
   ]);
