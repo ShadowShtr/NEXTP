@@ -37,6 +37,11 @@ create table if not exists public.wallet_accounts (
 -- Nunca guardamos um "saldo atual" em coluna: fica calculado em runtime
 -- (src/lib/wallets.ts) a partir do saldo inicial + receitas − gastos ligados
 -- à carteira, para nunca dessincronizar quando um gasto é editado/apagado.
+-- CREDIT-01 — só usados quando type = 'CARD' (informativo nesta 1ª versão; a
+-- fatura mensal e as compras parceladas ligadas ao cartão ficam para depois).
+alter table public.wallet_accounts add column if not exists closing_day int;
+alter table public.wallet_accounts add column if not exists due_day int;
+alter table public.wallet_accounts add column if not exists credit_limit numeric;
 
 -- ---------- EXPENSES ----------
 create table if not exists public.expenses (
@@ -261,6 +266,19 @@ create table if not exists public.activity_log (
 );
 create index if not exists activity_log_user_created_idx on public.activity_log(user_id, created_at desc);
 
+-- ---------- QUICK EXPENSE TEMPLATES (Gastos rápidos favoritos, UX-04) ----------
+create table if not exists public.quick_expense_templates (
+  id                uuid primary key default gen_random_uuid(),
+  user_id           uuid not null references auth.users(id) on delete cascade,
+  description       text not null,
+  amount            numeric not null,
+  category_id       uuid references public.categories(id) on delete set null,
+  payment_method    text,
+  wallet_account_id uuid references public.wallet_accounts(id) on delete set null,
+  usage_count       int not null default 0,
+  created_at        timestamptz not null default now()
+);
+
 -- ============================================================
 -- RLS: cada utilizador só acede às suas linhas.
 -- ============================================================
@@ -277,6 +295,7 @@ alter table public.income_entries         enable row level security;
 alter table public.monthly_closings       enable row level security;
 alter table public.wallet_accounts        enable row level security;
 alter table public.activity_log           enable row level security;
+alter table public.quick_expense_templates enable row level security;
 
 do $$
 declare t text;
@@ -284,7 +303,7 @@ begin
   foreach t in array array[
     'categories','expenses','saved_items','wishlist_items','planning_items',
     'recurring_payments','recurring_occurrences','user_settings','metric_events',
-    'income_entries','monthly_closings','wallet_accounts','activity_log'
+    'income_entries','monthly_closings','wallet_accounts','activity_log','quick_expense_templates'
   ]
   loop
     execute format('drop policy if exists "own_all" on public.%I;', t);

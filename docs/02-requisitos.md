@@ -10,6 +10,7 @@
 - Microanimação e feedback de sucesso ao salvar.
 - **Quanto dá para gastar por dia** (FINANCE-14): aviso com o valor diário disponível até ao fim do mês, calculado pelo motor financeiro central.
 - Botão **+** central abre um menu rápido (despesa, receita, conta fixa, item guardado, quero comprar, dívida) em vez de ir sempre direto para "novo gasto" (UX-03).
+- **Gastos rápidos favoritos** (UX-04): atalhos configuráveis (nome, valor, categoria) — um toque lança o gasto de hoje na hora; ordenados pelos mais usados.
 
 ### Guardados
 - Registar bens/compras importantes: nome, valor, data, loja, categoria, garantia, foto da fatura, observação.
@@ -41,11 +42,13 @@
 - **Limites por categoria** (BUDGET-02): barra de progresso por categoria com limite definido, aviso aos 80% e alerta ao ultrapassar.
 - **Histórico** (HISTORY-01): ecrã dedicado com filtro por mês, gastos agrupados por dia (subtotal diário), expandir dia para ver/editar cada gasto.
 - **Motor financeiro central** (FINANCE-13/16): Saldo atual, Saldo previsto (descontando contas pendentes), Dinheiro livre (após reserva) e previsão de como o mês vai terminar ao ritmo atual — contas fixas pagas contam sempre como gasto, mesmo sem lançamento ligado, para não deixar dinheiro "invisível".
-- **Fechamento mensal** (FINANCE-15): "Fechar mês" guarda uma fotografia dos valores (receitas, gastos, saldo, categoria com maior gasto); histórico de meses fechados e opção de "Reabrir mês".
+- **Fechamento mensal** (FINANCE-15): "Fechar mês" guarda uma fotografia dos valores (receitas, gastos, saldo, categoria com maior gasto); histórico de meses fechados, opção de "Reabrir mês", e aviso ao editar um gasto/receita de um mês já fechado.
+- **Relatório mensal** (REPORT-01): exportar o mês como HTML imprimível (Imprimir → Guardar como PDF) ou JSON, com receitas, gastos, saldo, categorias, maior gasto, Gastos Invisíveis, recorrentes e previsão.
 
 ### Carteiras (FINANCE-12)
 - Ecrã em Configurações → Carteiras: Dinheiro, Banco, Cartão, Poupança, MB Way, Outro, cada uma com saldo inicial e uma marcada como padrão.
 - Gastos e receitas podem ficar ligados a uma carteira (opcional); o saldo de cada carteira é sempre recalculado (saldo inicial + receitas − gastos ligados), nunca guardado numa coluna que possa dessincronizar.
+- **Cartão de crédito** (CREDIT-01): carteiras do tipo Cartão podem guardar dia de fecho, dia de vencimento e limite de crédito (informativo — gastos no cartão continuam a contar já no mês; fatura mensal e compras parceladas ligadas ao cartão ficam para trabalho futuro).
 
 ### Guardados/Wishlist — foto do produto
 - Colar link de uma imagem **ou** anexar/tirar foto (upload para Supabase Storage, bucket privado por utilizador) — mostrada no card em vez do ícone genérico.
@@ -62,6 +65,8 @@
 - Backup/restauro manual em JSON, preservando relações entre tabelas (BACKUP-02).
 - Tema claro/escuro; configuração de moeda, limites e categorias.
 - **Idempotência** (SAFETY-01): gasto manual, receita, conta recorrente lançada como gasto e item guardado lançado como gasto nunca duplicam num duplo-toque ou reenvio de rede.
+- **Lixeira** (SAFETY-03): apagar gasto, receita, item guardado, produto da wishlist ou conta/dívida nunca é definitivo — fica em Configurações → Lixeira até ser restaurado.
+- **Histórico de alterações** (SAFETY-02): Configurações → Histórico de alterações regista as ações financeiras relevantes (criar/editar/apagar/restaurar, marcar pago, converter, fechar mês, backup).
 
 ## Requisitos não funcionais
 

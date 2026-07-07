@@ -7,6 +7,8 @@ import { eur, monthBounds, todayISO } from "@/lib/format";
 import { CategoryIcon } from "@/lib/icons";
 import BudgetSheet from "@/components/BudgetSheet";
 import { getMonthlyFinance, type MonthlyFinance } from "@/lib/finance";
+import QuickExpenseManageSheet from "@/components/QuickExpenseManageSheet";
+import { launchQuickExpense, listQuickExpenses, type QuickExpenseTemplate } from "@/lib/quickExpense";
 
 type Props = {
   userId: string;
@@ -23,6 +25,9 @@ export default function RecordsTab({ userId, categories, onEdit, onQuickAdd }: P
   const [loading, setLoading] = useState(true);
   const [budgetSheetOpen, setBudgetSheetOpen] = useState(false);
   const [finance, setFinance] = useState<MonthlyFinance | null>(null);
+  const [quickExpenses, setQuickExpenses] = useState<QuickExpenseTemplate[]>([]);
+  const [manageQuickOpen, setManageQuickOpen] = useState(false);
+  const [launchingId, setLaunchingId] = useState<string | null>(null);
 
   const dayTotal = useMemo(() => dayExpenses.reduce((s, e) => s + Number(e.amount), 0), [dayExpenses]);
 
@@ -30,18 +35,27 @@ export default function RecordsTab({ userId, categories, onEdit, onQuickAdd }: P
     const sb = getSupabase();
     const { start, end } = monthBounds(today);
     const now = new Date();
-    const [day, month, settings, f] = await Promise.all([
+    const [day, month, settings, f, quick] = await Promise.all([
       sb.from("expenses").select("*").eq("user_id", userId).is("deleted_at", null).eq("date", today).order("time", { ascending: false }),
       sb.from("expenses").select("amount").eq("user_id", userId).is("deleted_at", null).gte("date", start).lte("date", end),
       sb.from("user_settings").select("monthly_budget").eq("user_id", userId).maybeSingle(),
       getMonthlyFinance(userId, now.getFullYear(), now.getMonth() + 1),
+      listQuickExpenses(userId),
     ]);
     if (day.data) setDayExpenses(day.data as Expense[]);
     if (month.data) setMonthTotal(month.data.reduce((s, r) => s + Number(r.amount), 0));
     setBudget(settings.data?.monthly_budget ?? null);
     setFinance(f);
+    setQuickExpenses(quick.slice(0, 8));
     setLoading(false);
   }, [userId, today]);
+
+  async function launch(t: QuickExpenseTemplate) {
+    setLaunchingId(t.id);
+    await launchQuickExpense(userId, t);
+    setLaunchingId(null);
+    load();
+  }
 
   useEffect(() => { load(); }, [load]);
 
@@ -113,6 +127,28 @@ export default function RecordsTab({ userId, categories, onEdit, onQuickAdd }: P
         </div>
       </div>
 
+      {/* UX-04 — gastos rápidos favoritos */}
+      <div>
+        <div className="flex items-center justify-between mb-2">
+          <p className="font-black text-sm">Gastos rápidos</p>
+          <button onClick={() => setManageQuickOpen(true)} className="text-nextp-blue text-xs font-bold underline">Gerir</button>
+        </div>
+        {quickExpenses.length === 0 ? (
+          <button onClick={() => setManageQuickOpen(true)} className="clay-card-soft w-full text-center text-nextp-muted text-sm py-3">
+            + Cria atalhos para os gastos que repetes (café, pão, uber…)
+          </button>
+        ) : (
+          <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
+            {quickExpenses.map((t) => (
+              <button key={t.id} onClick={() => launch(t)} disabled={launchingId === t.id}
+                className="clay-chip whitespace-nowrap shrink-0 bg-nextp-cardsoft text-nextp-ink active:scale-95 transition-transform">
+                {launchingId === t.id ? "…" : `${t.description} · ${eur(t.amount)}`}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
       {/* Últimos gastos */}
       <div className="space-y-2">
         <div className="flex items-center justify-between">
@@ -149,6 +185,15 @@ export default function RecordsTab({ userId, categories, onEdit, onQuickAdd }: P
           current={budget}
           onClose={() => setBudgetSheetOpen(false)}
           onSaved={(v) => { setBudget(v); setBudgetSheetOpen(false); }}
+        />
+      )}
+
+      {manageQuickOpen && (
+        <QuickExpenseManageSheet
+          userId={userId}
+          categories={categories}
+          onClose={() => setManageQuickOpen(false)}
+          onChanged={load}
         />
       )}
     </div>

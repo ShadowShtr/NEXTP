@@ -50,7 +50,10 @@ export default function WalletsSheet({ userId, onClose }: { userId: string; onCl
               <button key={w.id} onClick={() => setEditing(w)} className="clay-card-soft w-full flex items-center justify-between py-2.5 px-3 text-left">
                 <div className="min-w-0">
                   <p className="font-bold text-sm truncate">{w.name}{w.is_default ? " · padrão" : ""}</p>
-                  <p className="text-nextp-muted text-xs">{WALLET_TYPE_LABEL[w.type]}</p>
+                  <p className="text-nextp-muted text-xs">
+                    {WALLET_TYPE_LABEL[w.type]}
+                    {w.type === "CARD" && w.due_day ? ` · fatura vence dia ${w.due_day}` : ""}
+                  </p>
                 </div>
                 <p className={`font-black shrink-0 ${w.balance < 0 ? "text-nextp-danger" : ""}`}>{eur(w.balance)}</p>
               </button>
@@ -81,6 +84,9 @@ function WalletForm({ userId, editing, onClose, onSaved, onDelete }: {
   const [type, setType] = useState<WalletType>(editing?.type ?? "CASH");
   const [initial, setInitial] = useState(editing ? String(editing.initial_balance).replace(".", ",") : "0");
   const [isDefault, setIsDefault] = useState(editing?.is_default ?? false);
+  const [closingDay, setClosingDay] = useState(editing?.closing_day != null ? String(editing.closing_day) : "");
+  const [dueDay, setDueDay] = useState(editing?.due_day != null ? String(editing.due_day) : "");
+  const [creditLimit, setCreditLimit] = useState(editing?.credit_limit != null ? String(editing.credit_limit).replace(".", ",") : "");
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
@@ -89,7 +95,12 @@ function WalletForm({ userId, editing, onClose, onSaved, onDelete }: {
     const value = parseFloat((initial || "0").replace(",", "."));
     if (isNaN(value)) return setErr("Saldo inicial inválido.");
     setSaving(true);
-    const { error } = await saveWallet(userId, { id: editing?.id, name: name.trim(), type, initialBalance: value, isDefault });
+    const { error } = await saveWallet(userId, {
+      id: editing?.id, name: name.trim(), type, initialBalance: value, isDefault,
+      closingDay: closingDay ? parseInt(closingDay, 10) : null,
+      dueDay: dueDay ? parseInt(dueDay, 10) : null,
+      creditLimit: creditLimit ? parseFloat(creditLimit.replace(",", ".")) : null,
+    });
     setSaving(false);
     if (error) return setErr(error);
     onSaved();
@@ -116,6 +127,19 @@ function WalletForm({ userId, editing, onClose, onSaved, onDelete }: {
           <p className="text-nextp-muted text-xs font-bold uppercase mb-1">Saldo inicial</p>
           <input className="clay-input" inputMode="decimal" placeholder="€" value={initial} onChange={(e) => setInitial(e.target.value)} />
         </div>
+
+        {/* CREDIT-01 — fatura do cartão (informativo; gastos continuam a contar já no mês) */}
+        {type === "CARD" && (
+          <div className="clay-card-soft space-y-2">
+            <p className="text-xs font-bold text-nextp-muted">Fatura do cartão (opcional)</p>
+            <div className="grid grid-cols-2 gap-3">
+              <input className="clay-input" inputMode="numeric" placeholder="Dia fecho (1-31)" value={closingDay} onChange={(e) => setClosingDay(e.target.value)} />
+              <input className="clay-input" inputMode="numeric" placeholder="Dia vencimento (1-31)" value={dueDay} onChange={(e) => setDueDay(e.target.value)} />
+            </div>
+            <input className="clay-input" inputMode="decimal" placeholder="Limite de crédito (€)" value={creditLimit} onChange={(e) => setCreditLimit(e.target.value)} />
+          </div>
+        )}
+
         <label className="flex items-center gap-3 clay-card-soft cursor-pointer">
           <input type="checkbox" checked={isDefault} onChange={(e) => setIsDefault(e.target.checked)} className="w-5 h-5 accent-nextp-blue" />
           <span className="text-sm font-bold">Usar como carteira padrão</span>

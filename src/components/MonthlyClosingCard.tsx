@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { eur, prettyDate } from "@/lib/format";
 import { closeMonth, reopenMonth, getClosing, listClosings, type MonthlyClosing } from "@/lib/monthlyClosing";
+import { buildMonthlyReport, exportReportHTML, exportReportJSON } from "@/lib/report";
 
 const MONTHS = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
 
@@ -12,6 +13,7 @@ export default function MonthlyClosingCard({ userId, year, month }: { userId: st
   const [history, setHistory] = useState<MonthlyClosing[] | null>(null);
   const [showHistory, setShowHistory] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [exporting, setExporting] = useState(false);
 
   const load = useCallback(() => {
     getClosing(userId, year, month).then(setClosing);
@@ -43,6 +45,14 @@ export default function MonthlyClosingCard({ userId, year, month }: { userId: st
     if (next && !history) listClosings(userId).then(setHistory);
   }
 
+  async function exportReport(format: "html" | "json") {
+    setExporting(true);
+    const report = await buildMonthlyReport(userId, year, month);
+    if (format === "html") exportReportHTML(userId, report);
+    else exportReportJSON(userId, report);
+    setExporting(false);
+  }
+
   return (
     <div className="clay-card space-y-3">
       <div className="flex items-center justify-between">
@@ -68,6 +78,16 @@ export default function MonthlyClosingCard({ userId, year, month }: { userId: st
           </button>
         </>
       )}
+      {/* REPORT-01 */}
+      <div className="flex gap-2">
+        <button onClick={() => exportReport("html")} disabled={exporting} className="clay-btn-ghost flex-1 text-xs py-2">
+          {exporting ? "…" : "Relatório (imprimir/PDF)"}
+        </button>
+        <button onClick={() => exportReport("json")} disabled={exporting} className="clay-btn-ghost flex-1 text-xs py-2">
+          {exporting ? "…" : "Relatório (JSON)"}
+        </button>
+      </div>
+
       <button onClick={toggleHistory} className="text-nextp-blue text-xs font-bold underline w-full text-center">
         {showHistory ? "Ocultar meses fechados" : "Ver meses fechados"}
       </button>

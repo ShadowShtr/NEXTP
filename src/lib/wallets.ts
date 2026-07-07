@@ -10,6 +10,11 @@ export type WalletAccount = {
   color: string | null;
   icon: string | null;
   is_default: boolean;
+  // CREDIT-01 — só usados quando type === "CARD"; primeira versão apenas informativa
+  // (gastos no cartão continuam a contar já no mês, a fatura em si é trabalho futuro).
+  closing_day: number | null;
+  due_day: number | null;
+  credit_limit: number | null;
 };
 
 export type WalletBalance = WalletAccount & { balance: number };
@@ -49,6 +54,7 @@ export async function getWalletBalances(userId: string): Promise<WalletBalance[]
 
 export async function saveWallet(userId: string, wallet: {
   id?: string; name: string; type: WalletType; initialBalance: number; isDefault: boolean;
+  closingDay?: number | null; dueDay?: number | null; creditLimit?: number | null;
 }): Promise<{ error: string | null }> {
   const sb = getSupabase();
   if (wallet.isDefault) {
@@ -56,7 +62,11 @@ export async function saveWallet(userId: string, wallet: {
   }
   const payload = {
     name: wallet.name, type: wallet.type, initial_balance: wallet.initialBalance,
-    is_default: wallet.isDefault, updated_at: new Date().toISOString(),
+    is_default: wallet.isDefault,
+    closing_day: wallet.type === "CARD" ? wallet.closingDay ?? null : null,
+    due_day: wallet.type === "CARD" ? wallet.dueDay ?? null : null,
+    credit_limit: wallet.type === "CARD" ? wallet.creditLimit ?? null : null,
+    updated_at: new Date().toISOString(),
   };
   const { error } = wallet.id
     ? await sb.from("wallet_accounts").update(payload).eq("id", wallet.id)

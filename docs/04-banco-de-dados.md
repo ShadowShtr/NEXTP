@@ -10,19 +10,19 @@ Persistência com **Room/SQLite** (`nextp.db`) na versão Android (`android/`, a
 `id, name, icon, color, monthlyLimit?, isDefault, createdAt`
 
 ### Expense (`expenses`)
-`id, description, amount, categoryId, date (ISO yyyy-MM-dd), time (HH:mm), paymentMethod, note?, isRecurring, source, recurringPaymentOccurrenceId?, walletAccountId? (FINANCE-12), idempotencyKey? (SAFETY-01), createdAt, updatedAt`
-Índices: `date`, `categoryId`. Índice único parcial `(userId, idempotencyKey)` quando `idempotencyKey` não é nulo.
+`id, description, amount, categoryId, date (ISO yyyy-MM-dd), time (HH:mm), paymentMethod, note?, isRecurring, source, recurringPaymentOccurrenceId?, walletAccountId? (FINANCE-12), idempotencyKey? (SAFETY-01), deletedAt? (SAFETY-03), createdAt, updatedAt`
+Índices: `date`, `categoryId`, `(userId, deletedAt)`. Índice único parcial `(userId, idempotencyKey)` quando `idempotencyKey` não é nulo. Todas as queries de listagem filtram `deletedAt is null`.
 
 ### SavedItem (`saved_items`)
-`id, name, amount, purchaseDate, store?, category?, warrantyUntil?, invoiceImagePath?, purchaseUrl?, source (MANUAL|WISHLIST), wishlistItemId?, note?, countAsMonthlyExpense, createdAt, updatedAt`
+`id, name, amount, purchaseDate, store?, category?, warrantyUntil?, invoiceImagePath?, purchaseUrl?, source (MANUAL|WISHLIST), wishlistItemId?, note?, countAsMonthlyExpense, deletedAt? (SAFETY-03), createdAt, updatedAt`
 
 ### WishlistItem (`wishlist_items`) — "Quero comprar", ver `docs/18-amazon-wishlist.md`
-`id, name, expectedAmount, targetAmount?, currentAmount?, amazonUrl?, externalUrl?, imagePath?, categoryId?, priority, status (WISHLIST|PURCHASED), desiredDate?, note?, convertedSavedItemId?, createdAt, updatedAt`
+`id, name, expectedAmount, targetAmount?, currentAmount?, amazonUrl?, externalUrl?, imagePath?, categoryId?, priority, status (WISHLIST|PURCHASED), desiredDate?, note?, convertedSavedItemId?, deletedAt? (SAFETY-03), createdAt, updatedAt`
 Índices: `status`, `priority`, `categoryId`, `desiredDate`.
 Conversão para `SavedItem` é transacional (ver `src/lib/wishlist.ts`): cria o `SavedItem`, marca `status = PURCHASED`, grava `convertedSavedItemId` — nunca duplica.
 
 ### PlanningItem (`planning_items`)
-`id, name, type, totalAmount, paidAmount, remainingAmount, dueDate?, priority, status, repeatType, note?, createdAt, updatedAt`
+`id, name, type, totalAmount, paidAmount, remainingAmount, dueDate?, priority, status, repeatType, note?, deletedAt? (SAFETY-03), createdAt, updatedAt`
 
 ### RecurringPayment (`recurring_payments`) — *template*
 `id, name, amount, categoryId?, dueDay, repeatType, startDate, endDate?, reminderEnabled, reminderDaysBefore, autoCreateExpense, note?, isActive, createdAt, updatedAt`
@@ -39,16 +39,24 @@ Conversão para `SavedItem` é transacional (ver `src/lib/wishlist.ts`): cria o 
 `currency, dailyReminderEnabled, dailyReminderTime, monthlyBudget?, smallExpenseLimit, backupEnabled, lastBackupAt?, theme, reservedAmount (FINANCE-13, default 0)`
 
 ### IncomeEntry (`income_entries`) — INCOME-01
-`id, description, amount, date, source?, note?, walletAccountId? (FINANCE-12), idempotencyKey? (SAFETY-01), createdAt, updatedAt`
+`id, description, amount, date, source?, note?, walletAccountId? (FINANCE-12), idempotencyKey? (SAFETY-01), deletedAt? (SAFETY-03), createdAt, updatedAt`
 Índice: `(userId, date)`. Índice único parcial `(userId, idempotencyKey)` quando não é nulo. Sem FK para categoria — usado no Resumo para calcular **Saldo = Receitas − Gastos** do mês.
 
 ### WalletAccount (`wallet_accounts`) — FINANCE-12
-`id, name, type (CASH|BANK|CARD|SAVINGS|MBWAY|OTHER), initialBalance, color?, icon?, isDefault, createdAt, updatedAt`
-Sem coluna de "saldo atual": `src/lib/wallets.ts` calcula sempre em runtime (`initialBalance + receitas ligadas − gastos ligados`), para nunca dessincronizar se um gasto for editado ou apagado por fora.
+`id, name, type (CASH|BANK|CARD|SAVINGS|MBWAY|OTHER), initialBalance, color?, icon?, isDefault, closingDay? (CREDIT-01), dueDay? (CREDIT-01), creditLimit? (CREDIT-01), createdAt, updatedAt`
+Sem coluna de "saldo atual": `src/lib/wallets.ts` calcula sempre em runtime (`initialBalance + receitas ligadas − gastos ligados`), para nunca dessincronizar se um gasto for editado ou apagado por fora. `closingDay`/`dueDay`/`creditLimit` só fazem sentido quando `type = 'CARD'` — nesta primeira versão são apenas informativos.
 
 ### MonthlyClosing (`monthly_closings`) — FINANCE-15
 `id, year, month, incomeTotal, expenseTotal, recurringPaid, recurringPending, smallExpenseTotal, finalBalance, projectedBalance, topCategory?, closedAt, reopenedAt?, createdAt`
 Índice único `(userId, year, month)`. Snapshot tirado por `closeMonth()` (upsert — fechar de novo atualiza o snapshot); `reopenMonth()` só marca `reopenedAt`, mantém a linha para histórico.
+
+### ActivityLog (`activity_log`) — SAFETY-02
+`id, entityType, entityId?, action (CREATED|UPDATED|DELETED|RESTORED|MARKED_PAID|MARKED_PENDING|CONVERTED|IMPORTED|EXPORTED|CLOSED|REOPENED), description, amount?, createdAt`
+Índice: `(userId, createdAt desc)`. Gravado via `logActivity()` (fire-and-forget, como `logMetric`) nos pontos de mutação — nunca bloqueia a UI. Só leitura em Configurações → Histórico de alterações.
+
+### QuickExpenseTemplate (`quick_expense_templates`) — UX-04
+`id, description, amount, categoryId?, paymentMethod?, walletAccountId?, usageCount, createdAt`
+Um toque em Registos lança um `Expense` (`source = "QUICK"`) e incrementa `usageCount`, que decide a ordem dos favoritos.
 
 ### MetricEvent (`metric_events`) — ver `docs/16-metricas.md`
 `id, eventType, meta? (jsonb), createdAt`

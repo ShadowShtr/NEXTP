@@ -302,8 +302,16 @@ function RecurringSheet({ userId, editing, onClose, onSaved }: { userId: string;
   const [installments, setInstallments] = useState(
     editing?.end_date && editing?.start_date ? String(monthsBetween(editing.start_date, editing.end_date)) : ""
   );
+  const [totalAmount, setTotalAmount] = useState(""); // INSTALLMENTS-01 — só para calcular o valor da parcela
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+
+  function calcInstallmentAmount() {
+    const total = parseFloat(totalAmount.replace(",", "."));
+    const n = parseInt(installments, 10);
+    if (!total || total <= 0 || !n || n < 1) return;
+    setAmount((total / n).toFixed(2).replace(".", ","));
+  }
 
   async function save() {
     const value = parseFloat(amount.replace(",", "."));
@@ -371,12 +379,20 @@ function RecurringSheet({ userId, editing, onClose, onSaved }: { userId: string;
             <span className="text-sm font-bold">Tem número de parcelas? (ex.: empréstimo, prestação)</span>
           </label>
           {hasInstallments && (
-            <div>
+            <div className="space-y-2">
               <p className="text-nextp-muted text-xs font-bold uppercase mb-1">Número de parcelas</p>
               <input className="clay-input" inputMode="numeric" placeholder="ex.: 8" value={installments} onChange={(e) => setInstallments(e.target.value)} />
               {installments && !isNaN(parseInt(installments, 10)) && (
-                <p className="text-nextp-muted text-xs mt-1 break-words">Termina em {addMonths(startDate, parseInt(installments, 10) - 1)}</p>
+                <p className="text-nextp-muted text-xs break-words">Termina em {addMonths(startDate, parseInt(installments, 10) - 1)}</p>
               )}
+              {/* INSTALLMENTS-01 — opcional: sabendo o valor total, calcula o valor de cada parcela. */}
+              <div className="clay-card-soft space-y-2">
+                <p className="text-xs font-bold text-nextp-muted">Sabes o valor total da compra? Calculamos a parcela.</p>
+                <div className="flex gap-2">
+                  <input className="clay-input flex-1" inputMode="decimal" placeholder="Valor total (€)" value={totalAmount} onChange={(e) => setTotalAmount(e.target.value)} />
+                  <button type="button" onClick={calcInstallmentAmount} className="clay-btn-ghost text-sm px-3 shrink-0">Calcular</button>
+                </div>
+              </div>
             </div>
           )}
         </>

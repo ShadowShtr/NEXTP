@@ -8,7 +8,8 @@ export type MetricEventType =
   | "RECURRING_PAYMENT_MARKED_PAID" | "RECURRING_PAYMENT_MARKED_PARTIAL"
   | "BACKUP_STARTED" | "BACKUP_SUCCESS" | "BACKUP_FAILED"
   | "MONTH_CLOSED" | "MONTH_REOPENED"
-  | "ITEM_TRASHED" | "ITEM_RESTORED";
+  | "ITEM_TRASHED" | "ITEM_RESTORED"
+  | "REPORT_EXPORTED";
 
 /** Regista um evento local (fire-and-forget; nunca bloqueia a UI nem propaga erro). */
 export function logMetric(userId: string, type: MetricEventType, meta?: Record<string, unknown>) {
