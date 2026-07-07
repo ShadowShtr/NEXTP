@@ -10,8 +10,8 @@ Persistência com **Room/SQLite** (`nextp.db`) na versão Android (`android/`, a
 `id, name, icon, color, monthlyLimit?, isDefault, createdAt`
 
 ### Expense (`expenses`)
-`id, description, amount, categoryId, date (ISO yyyy-MM-dd), time (HH:mm), paymentMethod, note?, isRecurring, source, recurringPaymentOccurrenceId?, createdAt, updatedAt`
-Índices: `date`, `categoryId`.
+`id, description, amount, categoryId, date (ISO yyyy-MM-dd), time (HH:mm), paymentMethod, note?, isRecurring, source, recurringPaymentOccurrenceId?, walletAccountId? (FINANCE-12), idempotencyKey? (SAFETY-01), createdAt, updatedAt`
+Índices: `date`, `categoryId`. Índice único parcial `(userId, idempotencyKey)` quando `idempotencyKey` não é nulo.
 
 ### SavedItem (`saved_items`)
 `id, name, amount, purchaseDate, store?, category?, warrantyUntil?, invoiceImagePath?, purchaseUrl?, source (MANUAL|WISHLIST), wishlistItemId?, note?, countAsMonthlyExpense, createdAt, updatedAt`
@@ -36,14 +36,26 @@ Conversão para `SavedItem` é transacional (ver `src/lib/wishlist.ts`): cria o 
 Índice único `(year, month)`.
 
 ### UserSettings (`user_settings`) — singleton (`user_id` é a própria chave)
-`currency, dailyReminderEnabled, dailyReminderTime, monthlyBudget?, smallExpenseLimit, backupEnabled, lastBackupAt?, theme`
+`currency, dailyReminderEnabled, dailyReminderTime, monthlyBudget?, smallExpenseLimit, backupEnabled, lastBackupAt?, theme, reservedAmount (FINANCE-13, default 0)`
 
 ### IncomeEntry (`income_entries`) — INCOME-01
-`id, description, amount, date, source?, note?, createdAt, updatedAt`
-Índice: `(userId, date)`. Sem FKs — usado no Resumo para calcular **Saldo = Receitas − Gastos** do mês.
+`id, description, amount, date, source?, note?, walletAccountId? (FINANCE-12), idempotencyKey? (SAFETY-01), createdAt, updatedAt`
+Índice: `(userId, date)`. Índice único parcial `(userId, idempotencyKey)` quando não é nulo. Sem FK para categoria — usado no Resumo para calcular **Saldo = Receitas − Gastos** do mês.
+
+### WalletAccount (`wallet_accounts`) — FINANCE-12
+`id, name, type (CASH|BANK|CARD|SAVINGS|MBWAY|OTHER), initialBalance, color?, icon?, isDefault, createdAt, updatedAt`
+Sem coluna de "saldo atual": `src/lib/wallets.ts` calcula sempre em runtime (`initialBalance + receitas ligadas − gastos ligados`), para nunca dessincronizar se um gasto for editado ou apagado por fora.
+
+### MonthlyClosing (`monthly_closings`) — FINANCE-15
+`id, year, month, incomeTotal, expenseTotal, recurringPaid, recurringPending, smallExpenseTotal, finalBalance, projectedBalance, topCategory?, closedAt, reopenedAt?, createdAt`
+Índice único `(userId, year, month)`. Snapshot tirado por `closeMonth()` (upsert — fechar de novo atualiza o snapshot); `reopenMonth()` só marca `reopenedAt`, mantém a linha para histórico.
 
 ### MetricEvent (`metric_events`) — ver `docs/16-metricas.md`
 `id, eventType, meta? (jsonb), createdAt`
+
+## Motor financeiro central (`src/lib/finance.ts`) — FINANCE-13/14/16
+
+`computeMonthlyFinance()` é uma função pura (sem I/O, testada em `tests/finance.test.ts`) que recebe as receitas, gastos e ocorrências recorrentes de um mês e devolve: `incomeTotal`, `expenseTotal` (gastos diretos + contas recorrentes pagas, **mesmo sem gasto ligado** — nunca conta a dobrar quando há gasto ligado com `source = "RECURRING"`), `recurringPending`, `currentBalance`, `projectedBalance` (desconta `recurringPending`), `freeMoney` (desconta `reservedAmount`), e `dailyAvailable` (= `projectedBalance / diasRestantes`, incluindo hoje). `getMonthlyFinance()` busca os dados no Supabase e chama a função pura. Usado em Registos ("quanto podes gastar por dia"), Resumo (saldo atual/previsto/dinheiro livre/previsão) e na Central de Alertas (saldo previsto negativo).
 
 ## RPC (funções no Postgres)
 
@@ -61,6 +73,7 @@ Público para leitura (as fotos aparecem diretamente por URL nos cards); escrita
 - `Expense.recurringPaymentOccurrenceId → RecurringPaymentOccurrence.id` (quando o gasto veio de uma conta recorrente)
 - `RecurringPaymentOccurrence.recurringPaymentId → RecurringPayment.id`
 - `RecurringPaymentOccurrence.createdExpenseId → Expense.id`
+- `Expense.walletAccountId → WalletAccount.id` e `IncomeEntry.walletAccountId → WalletAccount.id` (`on delete set null` — apagar uma carteira nunca apaga o histórico financeiro ligado a ela)
 
 ## Datas
 

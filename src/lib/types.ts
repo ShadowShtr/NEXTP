@@ -18,6 +18,7 @@ export type Expense = {
   note: string | null;
   is_recurring: boolean;
   source: string;
+  wallet_account_id: string | null;
   created_at: string;
 };
 

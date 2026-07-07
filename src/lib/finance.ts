@@ -7,6 +7,7 @@ export type MonthlyFinance = {
   month: number;
   incomeTotal: number;
   expenseTotal: number;
+  recurringPaid: number;
   recurringPending: number;
   currentBalance: number;
   projectedBalance: number;
@@ -83,7 +84,7 @@ export function computeMonthlyFinance(params: {
   const projectedEndBalance = incomeTotal - projectedExpenseByAverage - recurringPending;
 
   return {
-    year, month, incomeTotal, expenseTotal, recurringPending,
+    year, month, incomeTotal, expenseTotal, recurringPaid, recurringPending,
     currentBalance, projectedBalance, reservedAmount, freeMoney,
     daysInMonth, daysElapsed, daysRemaining, averageDailyExpense, dailyAvailable,
     projectedExpenseByAverage, projectedEndBalance,

@@ -65,6 +65,7 @@ TASK 5 do masterplan (`docs/19`). Testes manuais (não há suite automatizada ai
 - `format.test.ts` — `eur`, `monthBounds` (incluindo ano bissexto), `prettyDate`, `todayISO`.
 - `wishlist.test.ts` — `isValidUrl`, `isAmazonUrl` (aceita http(s), rejeita `javascript:`/lixo, nunca lança exceção).
 - `recurring.test.ts` — `installmentLabel` (parcela X/Y, limites do intervalo, plano de parcela única).
+- `finance.test.ts` — `computeMonthlyFinance` (motor financeiro central): receitas/gastos diretos, conta recorrente paga com e sem gasto ligado (nunca conta a dobrar), contas pendentes só afetam o saldo previsto, pagamento parcial, dinheiro livre com reserva, gasto disponível por dia, previsão de fim de mês.
 
 `npm run typecheck` corre `tsc --noEmit`. O GitHub Actions (`.github/workflows/ci.yml`) executa `typecheck` → `test` → `build` em cada push/PR para `main`.
 

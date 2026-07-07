@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { getSupabase } from "@/lib/supabase";
 import { todayISO } from "@/lib/format";
 import { useLockBodyScroll } from "@/lib/useLockBodyScroll";
+import { defaultWalletId, listWallets, WALLET_TYPE_LABEL, type WalletAccount } from "@/lib/wallets";
 
 export type IncomeEntry = {
   id: string;
@@ -12,6 +13,7 @@ export type IncomeEntry = {
   date: string;
   source: string | null;
   note: string | null;
+  wallet_account_id?: string | null;
 };
 
 /** INCOME-01 — nova receita (salário, freelance, presente, etc.). */
@@ -24,10 +26,20 @@ export default function IncomeSheet({
   const [amount, setAmount] = useState(editing ? String(editing.amount).replace(".", ",") : "");
   const [date, setDate] = useState(editing?.date ?? todayISO());
   const [source, setSource] = useState(editing?.source ?? "");
+  const [wallets, setWallets] = useState<WalletAccount[]>([]);
+  const [walletId, setWalletId] = useState<string | null>(editing?.wallet_account_id ?? null);
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   // SAFETY-01 — evita duplicar a receita num duplo-toque ou reenvio de rede.
   const [idempotencyKey] = useState(() => crypto.randomUUID());
+
+  useEffect(() => {
+    listWallets(userId).then((ws) => {
+      setWallets(ws);
+      if (!isEdit) defaultWalletId(userId).then((id) => id && setWalletId(id));
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   async function save() {
     const value = parseFloat(amount.replace(",", "."));
@@ -36,7 +48,7 @@ export default function IncomeSheet({
     setSaving(true);
     const payload = {
       description: description.trim(), amount: value, date,
-      source: source.trim() || null, updated_at: new Date().toISOString(),
+      source: source.trim() || null, wallet_account_id: walletId, updated_at: new Date().toISOString(),
     };
     const { error } = isEdit
       ? await getSupabase().from("income_entries").update(payload).eq("id", editing!.id)
@@ -78,6 +90,25 @@ export default function IncomeSheet({
           <p className="text-nextp-muted text-xs font-bold uppercase mb-1">Data</p>
           <input type="date" className="clay-input" value={date} onChange={(e) => setDate(e.target.value)} />
         </div>
+
+        {/* FINANCE-12 — carteira opcional (para onde entrou o dinheiro) */}
+        {wallets.length > 0 && (
+          <div>
+            <p className="text-nextp-muted text-xs font-bold uppercase mb-1">Carteira</p>
+            <div className="flex gap-2 overflow-x-auto pb-1">
+              <button onClick={() => setWalletId(null)}
+                className={`clay-chip whitespace-nowrap shrink-0 ${walletId === null ? "bg-nextp-blue text-white" : "bg-nextp-cardsoft text-nextp-ink"}`}>
+                Sem carteira
+              </button>
+              {wallets.map((w) => (
+                <button key={w.id} onClick={() => setWalletId(w.id)}
+                  className={`clay-chip whitespace-nowrap shrink-0 ${walletId === w.id ? "bg-nextp-blue text-white" : "bg-nextp-cardsoft text-nextp-ink"}`}>
+                  {w.name} <span className="opacity-70">· {WALLET_TYPE_LABEL[w.type]}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         {err && <p className="text-nextp-danger text-sm text-center">{err}</p>}
         <button className="clay-btn w-full text-lg" onClick={save} disabled={saving}>

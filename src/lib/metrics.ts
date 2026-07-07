@@ -6,7 +6,8 @@ export type MetricEventType =
   | "SAVED_ITEM_CREATED"
   | "WISHLIST_ITEM_CREATED" | "WISHLIST_OPEN_AMAZON" | "WISHLIST_CONVERTED_TO_PURCHASED"
   | "RECURRING_PAYMENT_MARKED_PAID" | "RECURRING_PAYMENT_MARKED_PARTIAL"
-  | "BACKUP_STARTED" | "BACKUP_SUCCESS" | "BACKUP_FAILED";
+  | "BACKUP_STARTED" | "BACKUP_SUCCESS" | "BACKUP_FAILED"
+  | "MONTH_CLOSED" | "MONTH_REOPENED";
 
 /** Regista um evento local (fire-and-forget; nunca bloqueia a UI nem propaga erro). */
 export function logMetric(userId: string, type: MetricEventType, meta?: Record<string, unknown>) {

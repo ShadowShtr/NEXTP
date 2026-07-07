@@ -9,6 +9,7 @@ import { FeatureIcon } from "@/lib/icons";
 import IncomeSheet, { type IncomeEntry } from "@/components/IncomeSheet";
 import HistoryView from "@/components/HistoryView";
 import { getMonthlyFinance, type MonthlyFinance } from "@/lib/finance";
+import MonthlyClosingCard from "@/components/MonthlyClosingCard";
 
 type Row = { amount: number; date: string; category_id: string | null };
 type Cat = { id: string; name: string; color: string; monthly_limit: number | null };
@@ -279,6 +280,9 @@ export default function SummaryTab({ userId }: { userId: string }) {
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src="/icons/features/feature-invisible-expenses.svg" width={72} height={72} alt="" className="relative z-10" draggable={false} />
       </div>
+
+      {/* FINANCE-15 — fechamento mensal */}
+      <MonthlyClosingCard userId={userId} year={now.getFullYear()} month={now.getMonth() + 1} />
 
       {incomeOpen && (
         <IncomeSheet

@@ -7,6 +7,7 @@ import { PAYMENT_METHODS } from "@/lib/types";
 import { CategoryIcon } from "@/lib/icons";
 import { logMetric } from "@/lib/metrics";
 import { useLockBodyScroll } from "@/lib/useLockBodyScroll";
+import { defaultWalletId, listWallets, WALLET_TYPE_LABEL, type WalletAccount } from "@/lib/wallets";
 
 type Props = {
   onClose: () => void;
@@ -30,6 +31,8 @@ export default function AddExpenseSheet({
   const [method, setMethod] = useState(editing?.payment_method ?? defaults.method);
   const [date, setDate] = useState(editing?.date ?? defaults.date);
   const [note, setNote] = useState(editing?.note ?? "");
+  const [wallets, setWallets] = useState<WalletAccount[]>([]);
+  const [walletId, setWalletId] = useState<string | null>(editing?.wallet_account_id ?? null);
   const [saving, setSaving] = useState(false);
   const [ok, setOk] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -39,6 +42,11 @@ export default function AddExpenseSheet({
 
   useEffect(() => {
     setErr(null); setOk(false);
+    listWallets(userId).then((ws) => {
+      setWallets(ws);
+      if (!isEdit) defaultWalletId(userId).then((id) => id && setWalletId(id));
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function save() {
@@ -54,6 +62,7 @@ export default function AddExpenseSheet({
       date,
       payment_method: method,
       note: note.trim() || null,
+      wallet_account_id: walletId,
       updated_at: new Date().toISOString(),
     };
     const { error } = isEdit
@@ -131,6 +140,25 @@ export default function AddExpenseSheet({
             </div>
 
             <input className="clay-input" placeholder="Observação (opcional)" value={note} onChange={(e) => setNote(e.target.value)} />
+
+            {/* FINANCE-12 — carteira opcional (de onde saiu o dinheiro) */}
+            {wallets.length > 0 && (
+              <div>
+                <p className="text-nextp-muted text-xs font-bold uppercase mb-1">Carteira</p>
+                <div className="flex gap-2 overflow-x-auto pb-1">
+                  <button onClick={() => setWalletId(null)}
+                    className={`clay-chip whitespace-nowrap shrink-0 ${walletId === null ? "bg-nextp-blue text-white" : "bg-nextp-cardsoft text-nextp-ink"}`}>
+                    Sem carteira
+                  </button>
+                  {wallets.map((w) => (
+                    <button key={w.id} onClick={() => setWalletId(w.id)}
+                      className={`clay-chip whitespace-nowrap shrink-0 ${walletId === w.id ? "bg-nextp-blue text-white" : "bg-nextp-cardsoft text-nextp-ink"}`}>
+                      {w.name} <span className="opacity-70">· {WALLET_TYPE_LABEL[w.type]}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {err && <p className="text-nextp-danger text-sm text-center">{err}</p>}
 

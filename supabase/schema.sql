@@ -21,6 +21,23 @@ create table if not exists public.categories (
 );
 
 
+-- ---------- WALLET ACCOUNTS (Carteiras, FINANCE-12) ----------
+create table if not exists public.wallet_accounts (
+  id              uuid primary key default gen_random_uuid(),
+  user_id         uuid not null references auth.users(id) on delete cascade,
+  name            text not null,
+  type            text not null default 'OTHER', -- CASH | BANK | CARD | SAVINGS | MBWAY | OTHER
+  initial_balance numeric not null default 0,
+  color           text,
+  icon            text,
+  is_default      boolean not null default false,
+  created_at      timestamptz not null default now(),
+  updated_at      timestamptz not null default now()
+);
+-- Nunca guardamos um "saldo atual" em coluna: fica calculado em runtime
+-- (src/lib/wallets.ts) a partir do saldo inicial + receitas − gastos ligados
+-- à carteira, para nunca dessincronizar quando um gasto é editado/apagado.
+
 -- ---------- EXPENSES ----------
 create table if not exists public.expenses (
   id             uuid primary key default gen_random_uuid(),
@@ -44,6 +61,8 @@ create index if not exists expenses_user_cat_idx on public.expenses(user_id, cat
 alter table public.expenses add column if not exists idempotency_key text;
 create unique index if not exists expenses_user_idempotency_uq
   on public.expenses(user_id, idempotency_key) where idempotency_key is not null;
+-- FINANCE-12 — de que carteira saiu o dinheiro (opcional; null = sem carteira definida).
+alter table public.expenses add column if not exists wallet_account_id uuid references public.wallet_accounts(id) on delete set null;
 
 -- ---------- SAVED ITEMS (Guardados > Comprados) ----------
 create table if not exists public.saved_items (
@@ -185,6 +204,8 @@ create index if not exists income_user_date_idx on public.income_entries(user_id
 alter table public.income_entries add column if not exists idempotency_key text;
 create unique index if not exists income_user_idempotency_uq
   on public.income_entries(user_id, idempotency_key) where idempotency_key is not null;
+-- FINANCE-12 — em que carteira entrou o dinheiro (opcional; null = sem carteira definida).
+alter table public.income_entries add column if not exists wallet_account_id uuid references public.wallet_accounts(id) on delete set null;
 
 -- ---------- METRIC EVENTS (ver docs/16-metricas.md) ----------
 create table if not exists public.metric_events (
@@ -195,6 +216,26 @@ create table if not exists public.metric_events (
   created_at timestamptz not null default now()
 );
 create index if not exists metric_events_user_type_idx on public.metric_events(user_id, event_type);
+
+-- ---------- MONTHLY CLOSINGS (Fechamento mensal, FINANCE-15) ----------
+create table if not exists public.monthly_closings (
+  id                   uuid primary key default gen_random_uuid(),
+  user_id              uuid not null references auth.users(id) on delete cascade,
+  year                 int not null,
+  month                int not null,
+  income_total         numeric not null default 0,
+  expense_total        numeric not null default 0,
+  recurring_paid       numeric not null default 0,
+  recurring_pending    numeric not null default 0,
+  small_expense_total  numeric not null default 0,
+  final_balance        numeric not null default 0,
+  projected_balance    numeric not null default 0,
+  top_category         text,
+  closed_at            timestamptz not null default now(),
+  reopened_at          timestamptz,
+  created_at           timestamptz not null default now(),
+  unique (user_id, year, month)
+);
 
 -- ============================================================
 -- RLS: cada utilizador só acede às suas linhas.
@@ -209,6 +250,8 @@ alter table public.recurring_occurrences  enable row level security;
 alter table public.user_settings          enable row level security;
 alter table public.metric_events          enable row level security;
 alter table public.income_entries         enable row level security;
+alter table public.monthly_closings       enable row level security;
+alter table public.wallet_accounts        enable row level security;
 
 do $$
 declare t text;
@@ -216,7 +259,7 @@ begin
   foreach t in array array[
     'categories','expenses','saved_items','wishlist_items','planning_items',
     'recurring_payments','recurring_occurrences','user_settings','metric_events',
-    'income_entries'
+    'income_entries','monthly_closings','wallet_accounts'
   ]
   loop
     execute format('drop policy if exists "own_all" on public.%I;', t);

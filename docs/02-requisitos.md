@@ -3,11 +3,13 @@
 ## Requisitos funcionais
 
 ### Registos (aba principal)
-- Registar gasto: valor, descrição, categoria, data, hora, forma de pagamento, observação.
+- Registar gasto: valor, descrição, categoria, data, hora, forma de pagamento, carteira (opcional), observação.
 - Categorias rápidas, sugestões de descrições recentes.
 - Lista dos gastos do dia; totais do dia e do mês.
 - Filtrar por data e categoria; editar, apagar, duplicar; marcar recorrente.
 - Microanimação e feedback de sucesso ao salvar.
+- **Quanto dá para gastar por dia** (FINANCE-14): aviso com o valor diário disponível até ao fim do mês, calculado pelo motor financeiro central.
+- Botão **+** central abre um menu rápido (despesa, receita, conta fixa, item guardado, quero comprar, dívida) em vez de ir sempre direto para "novo gasto" (UX-03).
 
 ### Guardados
 - Registar bens/compras importantes: nome, valor, data, loja, categoria, garantia, foto da fatura, observação.
@@ -38,12 +40,18 @@
 - **Receitas e Saldo** (INCOME-01): total de receitas do mês e saldo (receitas − gastos), com atalho para lançar nova receita.
 - **Limites por categoria** (BUDGET-02): barra de progresso por categoria com limite definido, aviso aos 80% e alerta ao ultrapassar.
 - **Histórico** (HISTORY-01): ecrã dedicado com filtro por mês, gastos agrupados por dia (subtotal diário), expandir dia para ver/editar cada gasto.
+- **Motor financeiro central** (FINANCE-13/16): Saldo atual, Saldo previsto (descontando contas pendentes), Dinheiro livre (após reserva) e previsão de como o mês vai terminar ao ritmo atual — contas fixas pagas contam sempre como gasto, mesmo sem lançamento ligado, para não deixar dinheiro "invisível".
+- **Fechamento mensal** (FINANCE-15): "Fechar mês" guarda uma fotografia dos valores (receitas, gastos, saldo, categoria com maior gasto); histórico de meses fechados e opção de "Reabrir mês".
+
+### Carteiras (FINANCE-12)
+- Ecrã em Configurações → Carteiras: Dinheiro, Banco, Cartão, Poupança, MB Way, Outro, cada uma com saldo inicial e uma marcada como padrão.
+- Gastos e receitas podem ficar ligados a uma carteira (opcional); o saldo de cada carteira é sempre recalculado (saldo inicial + receitas − gastos ligados), nunca guardado numa coluna que possa dessincronizar.
 
 ### Guardados/Wishlist — foto do produto
 - Colar link de uma imagem **ou** anexar/tirar foto (upload para Supabase Storage, bucket privado por utilizador) — mostrada no card em vez do ícone genérico.
 
 ### Central de Alertas
-- Painel (ícone de sino no cabeçalho, com indicador quando há alertas) com: conta recorrente/planeamento vencida ou a vencer hoje, garantia a expirar, categoria perto/acima do limite, Gastos Invisíveis altos, backup desatualizado.
+- Painel (ícone de sino no cabeçalho, com indicador quando há alertas) com: conta recorrente/planeamento vencida ou a vencer hoje, garantia a expirar, categoria perto/acima do limite, Gastos Invisíveis altos, backup desatualizado, saldo previsto negativo, sem receita lançada a meio do mês (ALERTS-01).
 
 ### Autenticação
 - Entrar / Criar conta / Esqueci a password como fluxos separados e explícitos (nunca criar conta silenciosamente após um erro de login).
@@ -53,6 +61,7 @@
 - Central de Alertas dentro da app (ver acima) — notificações push automáticas continuam como trabalho futuro (ver `docs/07-notificacoes.md`).
 - Backup/restauro manual em JSON, preservando relações entre tabelas (BACKUP-02).
 - Tema claro/escuro; configuração de moeda, limites e categorias.
+- **Idempotência** (SAFETY-01): gasto manual, receita, conta recorrente lançada como gasto e item guardado lançado como gasto nunca duplicam num duplo-toque ou reenvio de rede.
 
 ## Requisitos não funcionais
 
