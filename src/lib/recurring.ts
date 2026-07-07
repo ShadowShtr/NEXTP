@@ -141,11 +141,20 @@ export async function setPaidStatus(params: {
           payment_method: "Outro",
           source: "RECURRING",
           occurrence_id: occ.id,
+          // SAFETY-01 — chave determinística: marcar "pago" duas vezes seguidas nunca duplica o gasto ligado.
+          idempotency_key: `recurring_occurrence:${occ.id}`,
         })
         .select("id")
         .single();
-      if (expErr) return { error: expErr.message };
-      createdExpenseId = exp?.id ?? null;
+      if (expErr && expErr.code !== "23505") return { error: expErr.message };
+      if (exp) {
+        createdExpenseId = exp.id;
+      } else if (expErr?.code === "23505") {
+        // já existe um gasto com esta chave (duplo-toque) — reaproveita o id em vez de duplicar.
+        const { data: existing } = await sb.from("expenses").select("id")
+          .eq("user_id", userId).eq("idempotency_key", `recurring_occurrence:${occ.id}`).maybeSingle();
+        createdExpenseId = existing?.id ?? null;
+      }
     }
     const { error } = await sb
       .from("recurring_occurrences")

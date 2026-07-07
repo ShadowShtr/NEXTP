@@ -33,6 +33,9 @@ export default function AddExpenseSheet({
   const [saving, setSaving] = useState(false);
   const [ok, setOk] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  // SAFETY-01 — mesma chave em toda a vida desta folha: um duplo-toque ou reenvio de rede
+  // acerta o índice único e não cria um segundo gasto.
+  const [idempotencyKey] = useState(() => crypto.randomUUID());
 
   useEffect(() => {
     setErr(null); setOk(false);
@@ -55,9 +58,9 @@ export default function AddExpenseSheet({
     };
     const { error } = isEdit
       ? await sb.from("expenses").update(payload).eq("id", editing!.id)
-      : await sb.from("expenses").insert({ ...payload, user_id: userId, time: new Date().toTimeString().slice(0, 5), source: "MANUAL" });
+      : await sb.from("expenses").insert({ ...payload, user_id: userId, time: new Date().toTimeString().slice(0, 5), source: "MANUAL", idempotency_key: idempotencyKey });
     setSaving(false);
-    if (error) return setErr(error.message);
+    if (error && error.code !== "23505") return setErr(error.message);
     logMetric(userId, isEdit ? "EXPENSE_UPDATED" : "EXPENSE_CREATED");
     setOk(true);
     setTimeout(onSaved, 400);

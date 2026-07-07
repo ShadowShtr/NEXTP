@@ -40,6 +40,10 @@ create table if not exists public.expenses (
 );
 create index if not exists expenses_user_date_idx on public.expenses(user_id, date);
 create index if not exists expenses_user_cat_idx on public.expenses(user_id, category_id);
+-- SAFETY-01 — evita gasto duplicado (duplo-toque, reenvio de rede, "marcar pago" repetido).
+alter table public.expenses add column if not exists idempotency_key text;
+create unique index if not exists expenses_user_idempotency_uq
+  on public.expenses(user_id, idempotency_key) where idempotency_key is not null;
 
 -- ---------- SAVED ITEMS (Guardados > Comprados) ----------
 create table if not exists public.saved_items (
@@ -162,6 +166,7 @@ create table if not exists public.user_settings (
 );
 alter table public.user_settings add column if not exists backup_enabled boolean not null default false;
 alter table public.user_settings add column if not exists last_backup_at timestamptz;
+alter table public.user_settings add column if not exists reserved_amount numeric not null default 0;
 
 -- ---------- INCOME ENTRIES (Receitas, ver docs/02-requisitos.md) ----------
 create table if not exists public.income_entries (
@@ -176,6 +181,10 @@ create table if not exists public.income_entries (
   updated_at  timestamptz not null default now()
 );
 create index if not exists income_user_date_idx on public.income_entries(user_id, date);
+-- SAFETY-01 — evita receita duplicada (duplo-toque, reenvio de rede).
+alter table public.income_entries add column if not exists idempotency_key text;
+create unique index if not exists income_user_idempotency_uq
+  on public.income_entries(user_id, idempotency_key) where idempotency_key is not null;
 
 -- ---------- METRIC EVENTS (ver docs/16-metricas.md) ----------
 create table if not exists public.metric_events (
@@ -320,8 +329,8 @@ begin
     where id = p_wishlist_id;
 
   if p_count_as_expense then
-    insert into public.expenses (user_id, description, amount, date, time, payment_method, source)
-    values (v_user_id, v_wishlist.name, p_final_amount, p_purchase_date, to_char(now(), 'HH24:MI'), 'Outro', 'SAVED_ITEM')
+    insert into public.expenses (user_id, description, amount, date, time, payment_method, source, idempotency_key)
+    values (v_user_id, v_wishlist.name, p_final_amount, p_purchase_date, to_char(now(), 'HH24:MI'), 'Outro', 'SAVED_ITEM', 'saved_item:' || v_saved_id)
     returning id into v_expense_id;
   end if;
 

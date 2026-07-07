@@ -22,7 +22,9 @@ type SavedItem = {
 
 type Sub = "purchased" | "wishlist";
 
-export default function SavedTab({ userId }: { userId: string }) {
+type Props = { userId: string; autoOpen?: "saved" | "wishlist" | null; autoOpenToken?: number };
+
+export default function SavedTab({ userId, autoOpen, autoOpenToken }: Props) {
   const [sub, setSub] = useState<Sub>("purchased");
   const [items, setItems] = useState<SavedItem[]>([]);
   const [wish, setWish] = useState<WishlistItem[]>([]);
@@ -45,6 +47,14 @@ export default function SavedTab({ userId }: { userId: string }) {
   }, [userId]);
 
   useEffect(() => { load(); }, [load]);
+
+  // UX-03 — chegou aqui a partir do menu rápido do botão + (Novo item guardado / Quero comprar).
+  useEffect(() => {
+    if (!autoOpen) return;
+    if (autoOpen === "saved") { setSub("purchased"); setOpenPurchased(true); }
+    else { setSub("wishlist"); setOpenWish(true); }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoOpenToken]);
 
   const total = items.reduce((s, i) => s + Number(i.amount), 0);
   const wishTotal = wish.filter((w) => w.status === "WISHLIST").reduce((s, w) => s + Number(w.expected_amount ?? w.target_amount ?? 0), 0);
@@ -267,11 +277,13 @@ function SavedSheet({ userId, editing, onClose, onSaved }: { userId: string; edi
       ...payload, user_id: userId, source: "MANUAL",
     }).select("id").single();
     if (!error && countMonth && data) {
-      await getSupabase().from("expenses").insert({
+      // SAFETY-01 — chave determinística: reenviar o formulário não duplica o gasto ligado.
+      const { error: expErr } = await getSupabase().from("expenses").insert({
         user_id: userId, description: name.trim(), amount: value, date,
         time: new Date().toTimeString().slice(0, 5), payment_method: "Outro",
-        source: "SAVED_ITEM",
+        source: "SAVED_ITEM", idempotency_key: `saved_item:${data.id}`,
       });
+      if (expErr && expErr.code !== "23505") { setSaving(false); return setErr(expErr.message); }
     }
     setSaving(false);
     if (error) return setErr(error.message);

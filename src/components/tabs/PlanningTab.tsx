@@ -38,7 +38,9 @@ function groupByMonth(items: PlanningItem[]) {
   return groups;
 }
 
-export default function PlanningTab({ userId }: { userId: string }) {
+type Props = { userId: string; autoOpen?: "recurring" | "debt" | null; autoOpenToken?: number };
+
+export default function PlanningTab({ userId, autoOpen, autoOpenToken }: Props) {
   const now = new Date();
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth() + 1);
@@ -69,6 +71,14 @@ export default function PlanningTab({ userId }: { userId: string }) {
   }, [userId, year, month]);
 
   useEffect(() => { load(); }, [load]);
+
+  // UX-03 — chegou aqui a partir do menu rápido do botão + (Nova conta fixa / Nova dívida).
+  useEffect(() => {
+    if (!autoOpen) return;
+    if (autoOpen === "recurring") setOpenRec(true);
+    else { setPlanTab("DEBT"); setOpenPlan(true); }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoOpenToken]);
 
   const byPayment = useMemo(() => {
     const m = new Map<string, Occurrence>();

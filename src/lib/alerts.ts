@@ -1,5 +1,6 @@
 import { getSupabase } from "@/lib/supabase";
 import { eur, monthBounds, todayISO } from "@/lib/format";
+import { getMonthlyFinance } from "@/lib/finance";
 
 export type AlertSeverity = "danger" | "warning" | "info";
 export type AppAlert = { id: string; severity: AlertSeverity; title: string; detail: string };
@@ -20,7 +21,7 @@ export async function computeAlerts(userId: string): Promise<AppAlert[]> {
   const now = new Date();
   const { start, end } = monthBounds(today);
 
-  const [occ, planning, saved, cats, expenses, settings] = await Promise.all([
+  const [occ, planning, saved, cats, expenses, settings, income, finance] = await Promise.all([
     sb.from("recurring_occurrences").select("id,due_date,status,expected_amount,recurring_payment_id")
       .eq("user_id", userId).eq("year", now.getFullYear()).eq("month", now.getMonth() + 1)
       .in("status", ["PENDING", "OVERDUE", "PARTIAL"]),
@@ -30,6 +31,8 @@ export async function computeAlerts(userId: string): Promise<AppAlert[]> {
     sb.from("categories").select("id,name,monthly_limit").eq("user_id", userId).not("monthly_limit", "is", null),
     sb.from("expenses").select("amount,category_id").eq("user_id", userId).gte("date", start).lte("date", end),
     sb.from("user_settings").select("small_expense_limit,last_backup_at").eq("user_id", userId).maybeSingle(),
+    sb.from("income_entries").select("id").eq("user_id", userId).gte("date", start).lte("date", end).limit(1),
+    getMonthlyFinance(userId, now.getFullYear(), now.getMonth() + 1),
   ]);
 
   const alerts: AppAlert[] = [];
@@ -88,6 +91,16 @@ export async function computeAlerts(userId: string): Promise<AppAlert[]> {
   const smallTotal = smallExpenses.reduce((s, e) => s + Number(e.amount), 0);
   if (smallExpenses.length >= 15 || smallTotal >= 50) {
     alerts.push({ id: "small-expenses", severity: "info", title: "Gastos Invisíveis altos este mês", detail: `${eur(smallTotal)} em ${smallExpenses.length} pequenas compras` });
+  }
+
+  // FINANCE-13/ALERTS-01 — saldo previsto negativo (considerando contas pendentes).
+  if (finance.projectedBalance < 0) {
+    alerts.push({ id: "projected-negative", severity: "danger", title: "Saldo previsto negativo", detail: `Contando as contas pendentes, o mês fecha em ${eur(finance.projectedBalance)}` });
+  }
+
+  // Sem receita registada no mês (só avisa depois da 1ª quinzena, para não incomodar no início do mês).
+  if ((income.data ?? []).length === 0 && finance.daysElapsed >= 15) {
+    alerts.push({ id: "no-income", severity: "warning", title: "Sem receita registada este mês", detail: "Já vai a meio do mês e ainda não lançaste nenhuma receita — o saldo pode estar incorreto." });
   }
 
   // Backup desatualizado (nunca feito ou há mais de 30 dias).

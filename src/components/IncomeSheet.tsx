@@ -26,6 +26,8 @@ export default function IncomeSheet({
   const [source, setSource] = useState(editing?.source ?? "");
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  // SAFETY-01 — evita duplicar a receita num duplo-toque ou reenvio de rede.
+  const [idempotencyKey] = useState(() => crypto.randomUUID());
 
   async function save() {
     const value = parseFloat(amount.replace(",", "."));
@@ -38,9 +40,9 @@ export default function IncomeSheet({
     };
     const { error } = isEdit
       ? await getSupabase().from("income_entries").update(payload).eq("id", editing!.id)
-      : await getSupabase().from("income_entries").insert({ ...payload, user_id: userId });
+      : await getSupabase().from("income_entries").insert({ ...payload, user_id: userId, idempotency_key: idempotencyKey });
     setSaving(false);
-    if (error) return setErr(error.message);
+    if (error && error.code !== "23505") return setErr(error.message);
     onSaved();
   }
 

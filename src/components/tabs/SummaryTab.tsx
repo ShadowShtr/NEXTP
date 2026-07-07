@@ -8,6 +8,7 @@ import { computeStreak } from "@/lib/streak";
 import { FeatureIcon } from "@/lib/icons";
 import IncomeSheet, { type IncomeEntry } from "@/components/IncomeSheet";
 import HistoryView from "@/components/HistoryView";
+import { getMonthlyFinance, type MonthlyFinance } from "@/lib/finance";
 
 type Row = { amount: number; date: string; category_id: string | null };
 type Cat = { id: string; name: string; color: string; monthly_limit: number | null };
@@ -34,6 +35,7 @@ export default function SummaryTab({ userId }: { userId: string }) {
   const [incomeOpen, setIncomeOpen] = useState(false);
   const [editingIncome, setEditingIncome] = useState<IncomeEntry | null>(null);
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [finance, setFinance] = useState<MonthlyFinance | null>(null);
   const [loading, setLoading] = useState(true);
   const today = todayISO();
   const now = new Date();
@@ -58,6 +60,8 @@ export default function SummaryTab({ userId }: { userId: string }) {
     setOccRows((occ.data ?? []) as OccRow[]);
     setSmallLimit(settings.data?.small_expense_limit ?? DEFAULT_SMALL_LIMIT);
     setIncome((inc.data ?? []) as IncomeEntry[]);
+    const f = await getMonthlyFinance(userId, now.getFullYear(), now.getMonth() + 1);
+    setFinance(f);
     setLoading(false);
     computeStreak(userId).then(setStreak);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -110,9 +114,6 @@ export default function SummaryTab({ userId }: { userId: string }) {
     return out;
   }, [rows]);
 
-  const incomeTotal = useMemo(() => income.reduce((s, i) => s + Number(i.amount), 0), [income]);
-  const balance = incomeTotal - stats.total;
-
   /** BUDGET-02 — progresso por categoria, só para as que têm monthly_limit definido. */
   const categoryLimits = useMemo(() => {
     const spentByCat = new Map<string, number>();
@@ -142,11 +143,20 @@ export default function SummaryTab({ userId }: { userId: string }) {
 
       <MotivationalCard streak={streak} monthOnTrack={recurringStats.total > 0 && recurringStats.pending === 0} hasExpenses={stats.count > 0} />
 
-      {/* INCOME-01 — Receitas e Saldo do mês */}
-      <div className="grid grid-cols-2 gap-3">
-        <Stat label="Receitas do mês" value={eur(incomeTotal)} success />
-        <Stat label="Saldo" value={eur(balance)} danger={balance < 0} success={balance >= 0} />
-      </div>
+      {/* FINANCE-13 — motor financeiro central: receitas, gastos, saldo atual e previsto */}
+      {finance && (
+        <>
+          <div className="grid grid-cols-2 gap-3">
+            <Stat label="Receitas do mês" value={eur(finance.incomeTotal)} success />
+            <Stat label="Gastos do mês" value={eur(finance.expenseTotal)} />
+            <Stat label="Saldo atual" value={eur(finance.currentBalance)} success={finance.currentBalance >= 0} danger={finance.currentBalance < 0} />
+            <Stat label="Saldo previsto" value={eur(finance.projectedBalance)} success={finance.projectedBalance >= 0} danger={finance.projectedBalance < 0} />
+          </div>
+          {finance.reservedAmount > 0 && (
+            <Stat label="Dinheiro livre (após reserva)" value={eur(finance.freeMoney)} success={finance.freeMoney >= 0} danger={finance.freeMoney < 0} />
+          )}
+        </>
+      )}
       <button onClick={() => { setEditingIncome(null); setIncomeOpen(true); }} className="clay-btn-ghost w-full text-sm py-2.5">
         + Nova receita
       </button>
@@ -165,12 +175,23 @@ export default function SummaryTab({ userId }: { userId: string }) {
         </div>
       )}
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-3 gap-3">
         <Stat label="Gasto hoje" value={eur(stats.day)} accent />
-        <Stat label="Gasto no mês" value={eur(stats.total)} />
         <Stat label="Média diária" value={eur(stats.avg)} />
         <Stat label="Maior gasto" value={eur(stats.biggest)} />
       </div>
+
+      {/* FINANCE-16 — previsão de como o mês vai acabar */}
+      {finance && finance.daysRemaining > 0 && (
+        <div className="clay-card-soft space-y-1">
+          <p className="text-sm">
+            Ao ritmo atual, vais gastar cerca de <span className="font-black">{eur(finance.projectedExpenseByAverage)}</span> até ao fim do mês.
+          </p>
+          <p className={`text-sm font-bold ${finance.projectedEndBalance >= 0 ? "text-nextp-success" : "text-nextp-danger"}`}>
+            Saldo previsto no fim do mês: {eur(finance.projectedEndBalance)}
+          </p>
+        </div>
+      )}
 
       {/* Comparação com mês anterior */}
       {stats.change !== null && (

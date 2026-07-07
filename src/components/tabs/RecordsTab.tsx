@@ -6,6 +6,7 @@ import type { Category, Expense } from "@/lib/types";
 import { eur, monthBounds, todayISO } from "@/lib/format";
 import { CategoryIcon } from "@/lib/icons";
 import BudgetSheet from "@/components/BudgetSheet";
+import { getMonthlyFinance, type MonthlyFinance } from "@/lib/finance";
 
 type Props = {
   userId: string;
@@ -21,20 +22,24 @@ export default function RecordsTab({ userId, categories, onEdit, onQuickAdd }: P
   const [budget, setBudget] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [budgetSheetOpen, setBudgetSheetOpen] = useState(false);
+  const [finance, setFinance] = useState<MonthlyFinance | null>(null);
 
   const dayTotal = useMemo(() => dayExpenses.reduce((s, e) => s + Number(e.amount), 0), [dayExpenses]);
 
   const load = useCallback(async () => {
     const sb = getSupabase();
     const { start, end } = monthBounds(today);
-    const [day, month, settings] = await Promise.all([
+    const now = new Date();
+    const [day, month, settings, f] = await Promise.all([
       sb.from("expenses").select("*").eq("user_id", userId).eq("date", today).order("time", { ascending: false }),
       sb.from("expenses").select("amount").eq("user_id", userId).gte("date", start).lte("date", end),
       sb.from("user_settings").select("monthly_budget").eq("user_id", userId).maybeSingle(),
+      getMonthlyFinance(userId, now.getFullYear(), now.getMonth() + 1),
     ]);
     if (day.data) setDayExpenses(day.data as Expense[]);
     if (month.data) setMonthTotal(month.data.reduce((s, r) => s + Number(r.amount), 0));
     setBudget(settings.data?.monthly_budget ?? null);
+    setFinance(f);
     setLoading(false);
   }, [userId, today]);
 
@@ -83,6 +88,17 @@ export default function RecordsTab({ userId, categories, onEdit, onQuickAdd }: P
           draggable={false}
         />
       </div>
+
+      {/* FINANCE-14 — quanto posso gastar por dia até ao fim do mês */}
+      {finance && finance.daysRemaining > 0 && (
+        <div className={`clay-card-soft text-sm ${finance.dailyAvailable < 0 ? "text-nextp-danger" : ""}`}>
+          {finance.dailyAvailable >= 0 ? (
+            <>Podes gastar até <span className="font-black">{eur(finance.dailyAvailable)}/dia</span> para fechar o mês positivo ({finance.daysRemaining} dias restantes).</>
+          ) : (
+            <>Atenção: contando as contas pendentes, o mês já está negativo em {eur(Math.abs(finance.projectedBalance))}.</>
+          )}
+        </div>
+      )}
 
       {/* Categorias rápidas */}
       <div>

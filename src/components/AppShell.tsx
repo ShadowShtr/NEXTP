@@ -14,6 +14,8 @@ import SummaryTab from "@/components/tabs/SummaryTab";
 import AddExpenseSheet from "@/components/AddExpenseSheet";
 import SettingsSheet from "@/components/SettingsSheet";
 import AlertsSheet from "@/components/AlertsSheet";
+import QuickAddSheet, { type QuickAddTarget } from "@/components/QuickAddSheet";
+import IncomeSheet from "@/components/IncomeSheet";
 import { computeAlerts } from "@/lib/alerts";
 import { FeatureIcon } from "@/lib/icons";
 
@@ -31,6 +33,10 @@ export default function AppShell({ session }: { session: Session }) {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [alertsOpen, setAlertsOpen] = useState(false);
   const [alertCount, setAlertCount] = useState(0);
+  const [quickAddOpen, setQuickAddOpen] = useState(false);
+  const [incomeOpen, setIncomeOpen] = useState(false);
+  const [pendingAction, setPendingAction] = useState<QuickAddTarget | null>(null);
+  const [pendingToken, setPendingToken] = useState(0);
 
   const loadCats = useCallback(async () => {
     await ensureDefaultCategories(userId);
@@ -46,6 +52,17 @@ export default function AppShell({ session }: { session: Session }) {
   function openEdit(e: Expense) { setEditing(e); setPreset(null); setAddOpen(true); }
   function close() { setAddOpen(false); setEditing(null); setPreset(null); }
   function afterSave() { close(); setRefresh((r) => r + 1); }
+
+  /** UX-03 — o + central abre um menu rápido; cada opção decide para onde ir. */
+  function handleQuickAdd(target: QuickAddTarget) {
+    setQuickAddOpen(false);
+    if (target === "expense") return openAdd();
+    if (target === "income") return setIncomeOpen(true);
+    if (target === "recurring" || target === "debt") setTab("planning");
+    else setTab("saved"); // saved | wishlist
+    setPendingAction(target);
+    setPendingToken((t) => t + 1);
+  }
 
   async function logout() { await getSupabase().auth.signOut(); }
 
@@ -76,12 +93,12 @@ export default function AppShell({ session }: { session: Session }) {
 
       <main className="flex-1 overflow-y-auto pb-28">
         {tab === "records" && <RecordsTab key={key} userId={userId} categories={categories} onEdit={openEdit} onQuickAdd={openQuick} />}
-        {tab === "saved" && <SavedTab key={key} userId={userId} />}
-        {tab === "planning" && <PlanningTab key={key} userId={userId} />}
+        {tab === "saved" && <SavedTab key={key} userId={userId} autoOpen={pendingAction === "saved" || pendingAction === "wishlist" ? pendingAction : null} autoOpenToken={pendingToken} />}
+        {tab === "planning" && <PlanningTab key={key} userId={userId} autoOpen={pendingAction === "recurring" || pendingAction === "debt" ? pendingAction : null} autoOpenToken={pendingToken} />}
         {tab === "summary" && <SummaryTab key={key} userId={userId} />}
       </main>
 
-      <BottomNav tab={tab} setTab={setTab} onAdd={openAdd} />
+      <BottomNav tab={tab} setTab={setTab} onAdd={() => setQuickAddOpen(true)} />
 
       {addOpen && (
         <AddExpenseSheet
@@ -100,6 +117,15 @@ export default function AppShell({ session }: { session: Session }) {
       )}
 
       {alertsOpen && <AlertsSheet userId={userId} onClose={() => setAlertsOpen(false)} />}
+
+      {quickAddOpen && <QuickAddSheet onClose={() => setQuickAddOpen(false)} onSelect={handleQuickAdd} />}
+
+      {incomeOpen && (
+        <IncomeSheet userId={userId} editing={null}
+          onClose={() => setIncomeOpen(false)}
+          onSaved={() => { setIncomeOpen(false); setRefresh((r) => r + 1); }}
+        />
+      )}
     </div>
   );
 }
