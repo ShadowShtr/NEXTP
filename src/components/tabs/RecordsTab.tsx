@@ -75,7 +75,7 @@ export default function RecordsTab({ userId, categories, onEdit, onQuickAdd }: P
           <div className="relative z-10">
             <p className="text-white/80 text-xs font-bold">Hoje</p>
             <p className="text-3xl font-black leading-tight">{eur(dayTotal)}</p>
-            <p className="text-white/80 text-xs">{dayExpenses.length} {dayExpenses.length === 1 ? "gasto" : "gastos"} · toca para ver o extrato</p>
+            <p className="text-white/80 text-xs">{dayExpenses.length} {dayExpenses.length === 1 ? "gasto" : "gastos"}</p>
           </div>
         </button>
 
