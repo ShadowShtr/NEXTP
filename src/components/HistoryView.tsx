@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { getSupabase } from "@/lib/supabase";
 import type { Category, Expense } from "@/lib/types";
-import { eur, monthBounds, prettyDate } from "@/lib/format";
+import { eur, monthBounds, prettyDate, todayISO } from "@/lib/format";
 import { CategoryIcon } from "@/lib/icons";
 import AddExpenseSheet from "@/components/AddExpenseSheet";
 import { useLockBodyScroll } from "@/lib/useLockBodyScroll";
@@ -20,6 +20,7 @@ export default function HistoryView({ userId, onClose }: { userId: string; onClo
   const [categories, setCategories] = useState<Category[]>([]);
   const [openDay, setOpenDay] = useState<string | null>(null);
   const [editing, setEditing] = useState<Expense | null>(null);
+  const [addingDate, setAddingDate] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   const monthKey = `${year}-${String(month).padStart(2, "0")}-01`;
@@ -78,6 +79,14 @@ export default function HistoryView({ userId, onClose }: { userId: string; onClo
           <button onClick={() => shiftMonth(1)} className="text-nextp-blue text-2xl font-black px-2">›</button>
         </div>
 
+        {/* Extrato: acrescentar um gasto a um dia deste mês (não tem de ser hoje). */}
+        <button
+          onClick={() => setAddingDate(year === now.getFullYear() && month === now.getMonth() + 1 ? todayISO() : monthBounds(monthKey).end)}
+          className="clay-btn-ghost w-full text-sm py-2.5"
+        >
+          + Novo gasto neste mês
+        </button>
+
         <div className="clay-hero flex items-center justify-between py-3 px-4">
           <div className="relative z-10">
             <p className="text-white/80 text-xs font-bold uppercase">Total do mês</p>
@@ -123,6 +132,9 @@ export default function HistoryView({ userId, onClose }: { userId: string; onClo
                           </button>
                         );
                       })}
+                      <button onClick={() => setAddingDate(day.date)} className="text-nextp-blue text-xs font-bold underline pt-1">
+                        + Adicionar gasto a {prettyDate(day.date)}
+                      </button>
                     </div>
                   )}
                 </div>
@@ -141,6 +153,18 @@ export default function HistoryView({ userId, onClose }: { userId: string; onClo
           defaults={{ date: editing.date, time: editing.time ?? "12:00", method: editing.payment_method ?? "Dinheiro" }}
           onClose={() => setEditing(null)}
           onSaved={() => { setEditing(null); load(); }}
+        />
+      )}
+
+      {addingDate && (
+        <AddExpenseSheet
+          userId={userId}
+          categories={categories}
+          editing={null}
+          presetCategory={null}
+          defaults={{ date: addingDate, time: "12:00", method: "Dinheiro" }}
+          onClose={() => setAddingDate(null)}
+          onSaved={() => { setAddingDate(null); load(); }}
         />
       )}
     </div>

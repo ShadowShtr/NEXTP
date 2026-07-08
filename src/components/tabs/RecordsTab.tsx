@@ -9,6 +9,7 @@ import BudgetSheet from "@/components/BudgetSheet";
 import { getMonthlyFinance, type MonthlyFinance } from "@/lib/finance";
 import QuickExpenseManageSheet from "@/components/QuickExpenseManageSheet";
 import { launchQuickExpense, listQuickExpenses, type QuickExpenseTemplate } from "@/lib/quickExpense";
+import HistoryView from "@/components/HistoryView";
 
 type Props = {
   userId: string;
@@ -28,6 +29,7 @@ export default function RecordsTab({ userId, categories, onEdit, onQuickAdd }: P
   const [quickExpenses, setQuickExpenses] = useState<QuickExpenseTemplate[]>([]);
   const [manageQuickOpen, setManageQuickOpen] = useState(false);
   const [launchingId, setLaunchingId] = useState<string | null>(null);
+  const [historyOpen, setHistoryOpen] = useState(false);
 
   const dayTotal = useMemo(() => dayExpenses.reduce((s, e) => s + Number(e.amount), 0), [dayExpenses]);
 
@@ -153,7 +155,12 @@ export default function RecordsTab({ userId, categories, onEdit, onQuickAdd }: P
       <div className="space-y-2">
         <div className="flex items-center justify-between">
           <h2 className="font-black text-lg">Gastos de hoje</h2>
-          <span className="text-nextp-muted text-sm">{dayExpenses.length}</span>
+          <div className="flex items-center gap-3">
+            <button onClick={() => setHistoryOpen(true)} className="text-nextp-blue text-xs font-bold underline">
+              Ver extrato completo
+            </button>
+            <span className="text-nextp-muted text-sm">{dayExpenses.length}</span>
+          </div>
         </div>
 
         {loading ? (
@@ -195,6 +202,10 @@ export default function RecordsTab({ userId, categories, onEdit, onQuickAdd }: P
           onClose={() => setManageQuickOpen(false)}
           onChanged={load}
         />
+      )}
+
+      {historyOpen && (
+        <HistoryView userId={userId} onClose={() => { setHistoryOpen(false); load(); }} />
       )}
     </div>
   );
