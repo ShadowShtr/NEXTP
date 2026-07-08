@@ -96,24 +96,6 @@ export async function ensureOccurrences(userId: string, year: number, month: num
   if (toCreate.length) await sb.from("recurring_occurrences").insert(toCreate);
 }
 
-/** Alterna pago/pendente de uma ocorrência (só afeta ESTE mês). Sem lançar gasto. */
-export async function togglePaid(userId: string, occ: Occurrence): Promise<{ error: string | null }> {
-  const sb = getSupabase();
-  const nowPaying = occ.status !== "PAID";
-  const { error } = await sb
-    .from("recurring_occurrences")
-    .update({
-      status: nowPaying ? "PAID" : "PENDING",
-      paid_amount: nowPaying ? occ.expected_amount : 0,
-      paid_at: nowPaying ? new Date().toISOString().slice(0, 10) : null,
-      updated_at: new Date().toISOString(),
-    })
-    .eq("id", occ.id);
-  if (error) return { error: error.message };
-  if (nowPaying) logMetric(userId, "RECURRING_PAYMENT_MARKED_PAID");
-  return { error: null };
-}
-
 /**
  * Marca como pago (ou desmarca) e opcionalmente lança/estorna o gasto vinculado.
  * Nunca duplica: usa `created_expense_id` para saber se já existe um gasto ligado.
@@ -122,10 +104,11 @@ export async function setPaidStatus(params: {
   userId: string;
   occ: Occurrence;
   paymentName: string;
+  categoryId: string | null;
   paid: boolean;
   createExpense: boolean;
 }): Promise<{ error: string | null }> {
-  const { userId, occ, paymentName, paid, createExpense } = params;
+  const { userId, occ, paymentName, categoryId, paid, createExpense } = params;
   const sb = getSupabase();
 
   if (paid) {
@@ -137,6 +120,7 @@ export async function setPaidStatus(params: {
           user_id: userId,
           description: paymentName,
           amount: occ.expected_amount,
+          category_id: categoryId,
           date: new Date().toISOString().slice(0, 10),
           time: new Date().toTimeString().slice(0, 5),
           payment_method: "Outro",

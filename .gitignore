@@ -1,5 +1,8 @@
 # NextP .gitignore
 
+# Relatório gerado por scripts/nextp-audit.mjs (não é fonte, re-gera-se a qualquer momento)
+audit-report.md
+
 # --- Web (Next.js / Node) ---
 node_modules/
 .next/

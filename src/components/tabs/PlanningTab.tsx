@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react
 import { getSupabase } from "@/lib/supabase";
 import { eur, prettyDate } from "@/lib/format";
 import { CategoryIcon, PaymentDot, type DotState } from "@/lib/icons";
-import { ensureOccurrences, installmentLabel, togglePaid, type Occurrence, type RecurringPayment } from "@/lib/recurring";
+import { ensureOccurrences, installmentLabel, setPaidStatus, type Occurrence, type RecurringPayment } from "@/lib/recurring";
 import RecurringDetailSheet from "@/components/RecurringDetailSheet";
 import { useLockBodyScroll } from "@/lib/useLockBodyScroll";
 import { softDelete } from "@/lib/trash";
@@ -108,13 +108,18 @@ export default function PlanningTab({ userId, autoOpen, autoOpenToken }: Props) 
     setMonth(m); setYear(y);
   }
 
-  async function onQuickToggle(o: Occurrence) {
+  async function onQuickToggle(o: Occurrence, payment: RecurringPayment) {
     // Atualização otimista local — sem recarregar a página (evita saltar para o topo).
     const nowPaying = o.status !== "PAID";
     setOcc((prev) => prev.map((x) => x.id === o.id
       ? { ...x, status: nowPaying ? "PAID" : "PENDING", paid_amount: nowPaying ? x.expected_amount : 0 }
       : x));
-    const { error } = await togglePaid(userId, o);
+    // Cria sempre o gasto ligado (com categoria) — sem isto, a conta paga não aparecia no
+    // gráfico de categorias/evolução diária do Resumo, mesmo já contando no saldo geral.
+    const { error } = await setPaidStatus({
+      userId, occ: o, paymentName: payment.name, categoryId: payment.category_id,
+      paid: nowPaying, createExpense: true,
+    });
     if (error) {
       // reverte se a gravação falhar
       setOcc((prev) => prev.map((x) => (x.id === o.id ? o : x)));
@@ -177,7 +182,7 @@ export default function PlanningTab({ userId, autoOpen, autoOpenToken }: Props) 
                     </p>
                   </div>
                 </button>
-                <button onClick={() => onQuickToggle(o)} aria-label={o.status === "PAID" ? "marcar pendente" : "marcar pago"}
+                <button onClick={() => onQuickToggle(o, p)} aria-label={o.status === "PAID" ? "marcar pendente" : "marcar pago"}
                   className="shrink-0 active:scale-90 transition-transform">
                   <PaymentDot state={dot} size={34} />
                 </button>

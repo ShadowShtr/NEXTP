@@ -45,7 +45,7 @@ export default function RecurringDetailSheet({ userId, payment, occurrence, onCl
       createExpense = confirm(`Deseja lançar "${payment.name}" também como gasto do mês?`);
     }
     setBusy(true);
-    const { error } = await setPaidStatus({ userId, occ, paymentName: payment.name, paid: willPay, createExpense });
+    const { error } = await setPaidStatus({ userId, occ, paymentName: payment.name, categoryId: payment.category_id, paid: willPay, createExpense });
     setBusy(false);
     if (error) return setErr(error);
     setOcc({ ...occ, status: willPay ? "PAID" : "PENDING", paid_amount: willPay ? occ.expected_amount : 0 });
