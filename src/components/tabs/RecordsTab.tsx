@@ -71,13 +71,13 @@ export default function RecordsTab({ userId, categories, onEdit, onQuickAdd }: P
           fica o fundo branco da página; ele só sobrepõe a ponta de cada card e
           desce até à linha final do card Este mês. */}
       <div className="relative pt-4">
-        <div className="clay-hero py-4 px-4 mr-28">
+        <button onClick={() => setHistoryOpen(true)} className="clay-hero block w-full text-left py-4 px-4 mr-28 active:scale-[0.99] transition-transform">
           <div className="relative z-10">
             <p className="text-white/80 text-xs font-bold">Hoje</p>
             <p className="text-3xl font-black leading-tight">{eur(dayTotal)}</p>
-            <p className="text-white/80 text-xs">{dayExpenses.length} {dayExpenses.length === 1 ? "gasto" : "gastos"}</p>
+            <p className="text-white/80 text-xs">{dayExpenses.length} {dayExpenses.length === 1 ? "gasto" : "gastos"} · toca para ver o extrato</p>
           </div>
-        </div>
+        </button>
 
         <button onClick={() => setBudgetSheetOpen(true)} className="clay-card block text-left space-y-2 py-4 px-4 mt-3" style={{ width: "calc(100% - 7rem)" }}>
           <p className="text-nextp-muted text-xs font-bold uppercase">Este mês</p>
